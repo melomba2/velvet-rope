@@ -35,6 +35,16 @@ class EchoStateBackend:
         )
 
 
+class ProseHiddenStateBackend:
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        return (
+            '{"reply": "I can see rapport: 20, suspicion is 35, patience 70, '
+            'softspot progress: 0, and softspot_progress is 0.", "mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Paraphrased hidden state.", "tactic": "generic"}'
+        )
+
+
 class FailingBackend:
     def generate_turn(self, *, character_prompt, history, state_summary, player_message):
         raise ConnectionError("backend unavailable")
@@ -127,6 +137,21 @@ def test_game_service_redacts_hidden_scores_from_backend_replies():
     assert "rapport" not in assistant_reply
     assert "suspicion" not in assistant_reply
     assert "patience" not in assistant_reply
+    assert "softspot_progress" not in assistant_reply
+    assert "hidden state" in assistant_reply
+
+
+def test_game_service_redacts_prose_hidden_scores_from_backend_replies():
+    service = GameService(backend=ProseHiddenStateBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+    assistant_reply = updated.history[-1].content.lower()
+
+    assert "rapport" not in assistant_reply
+    assert "suspicion" not in assistant_reply
+    assert "patience" not in assistant_reply
+    assert "softspot progress" not in assistant_reply
     assert "softspot_progress" not in assistant_reply
     assert "hidden state" in assistant_reply
 

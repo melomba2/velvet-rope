@@ -114,6 +114,7 @@ def _summary_score(state_summary: str, key: str) -> int:
 class OpenAICompatibleBackend:
     base_url: str
     model: str
+    api_key: str = ""
     timeout_seconds: int = 60
 
     def generate_turn(
@@ -130,6 +131,7 @@ class OpenAICompatibleBackend:
         ]
         messages.extend({"role": turn.role, "content": turn.content} for turn in history[-8:])
         messages.append({"role": "user", "content": player_message})
+        headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key.strip() else None
         response = requests.post(
             f"{self.base_url.rstrip('/')}/chat/completions",
             json={
@@ -139,6 +141,7 @@ class OpenAICompatibleBackend:
                 "response_format": {"type": "json_object"},
             },
             timeout=self.timeout_seconds,
+            headers=headers,
         )
         response.raise_for_status()
         payload = response.json()
@@ -151,5 +154,6 @@ def backend_from_env() -> ModelBackend:
         return OpenAICompatibleBackend(
             base_url=os.getenv("VELVET_OPENAI_BASE_URL", "http://localhost:8080/v1"),
             model=os.getenv("VELVET_MODEL_NAME", "gemma-4-12b-it"),
+            api_key=os.getenv("VELVET_OPENAI_API_KEY", ""),
         )
     return DeterministicMarloweBackend()

@@ -82,6 +82,27 @@ def test_repeated_tactic_stops_farming():
     assert "line_logistics" in second.used_tactics
 
 
+def test_repeated_softspot_category_stops_farming_when_model_renames_tactic():
+    state = new_game_state(MARLOWE)
+    first = validate_turn(
+        MARLOWE,
+        state,
+        "Your line logistics are impressive.",
+        model_turn(rapport=12, softspot_progress=1, tactic="line_logistics"),
+    )
+
+    second = validate_turn(
+        MARLOWE,
+        first,
+        "Your queue logistics are still impressive.",
+        model_turn(rapport=12, softspot_progress=1, tactic="queue_management"),
+    )
+
+    assert second.scores.rapport == first.scores.rapport + 1
+    assert second.scores.softspot_progress == first.scores.softspot_progress
+    assert second.hint == "Marlowe has heard that angle already."
+
+
 def test_meta_attempt_increases_suspicion_and_costs_patience():
     state = new_game_state(MARLOWE)
     turn = model_turn(rapport=10, suspicion=-5, patience=0, tactic="jailbreak")
