@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import os
 import re
-from typing import Protocol
+from typing import Any, Protocol
 
 import requests
 
@@ -135,18 +135,12 @@ class OpenAICompatibleBackend:
         state_summary: str,
         player_message: str,
     ) -> str:
-        messages = [
-            {"role": "system", "content": character_prompt},
-            {"role": "system", "content": f"Current hidden state: {state_summary}"},
-        ]
-        messages.extend({"role": turn.role, "content": turn.content} for turn in history[-8:])
-        messages.append({"role": "user", "content": player_message})
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key.strip() else None
         response = requests.post(
             f"{self.base_url.rstrip('/')}/chat/completions",
             json={
                 "model": self.model,
-                "messages": messages,
+                "messages": _chat_messages(character_prompt, history, state_summary, player_message),
                 "temperature": 0.8,
                 "response_format": {"type": "json_object"},
             },
@@ -158,6 +152,60 @@ class OpenAICompatibleBackend:
         return payload["choices"][0]["message"]["content"]
 
 
+@dataclass
+class LlamaCppPythonBackend:
+    model_path: str
+    chat_format: str = ""
+    n_ctx: int = 4096
+    n_threads: int = 0
+    temperature: float = 0.8
+    _model: Any = field(default=None, init=False, repr=False)
+
+    def generate_turn(
+        self,
+        *,
+        character_prompt: str,
+        history: list[ChatTurn],
+        state_summary: str,
+        player_message: str,
+    ) -> str:
+        model = self._get_model()
+        payload = model.create_chat_completion(
+            messages=_chat_messages(character_prompt, history, state_summary, player_message),
+            temperature=self.temperature,
+            response_format={"type": "json_object"},
+        )
+        return payload["choices"][0]["message"]["content"]
+
+    def _get_model(self) -> Any:
+        if not self.model_path.strip():
+            raise ValueError("Set VELVET_LLAMA_CPP_MODEL_PATH to a GGUF model path before using llama-cpp-python.")
+        if self._model is None:
+            try:
+                llama_class = _load_llama_class()
+            except ModuleNotFoundError as exc:
+                raise RuntimeError(
+                    "Install llama-cpp-python before using VELVET_MODEL_BACKEND=llama-cpp-python."
+                ) from exc
+            kwargs: dict[str, Any] = {
+                "model_path": self.model_path,
+                "n_ctx": self.n_ctx,
+                "verbose": False,
+            }
+            if self.chat_format.strip():
+                kwargs["chat_format"] = self.chat_format
+            if self.n_threads > 0:
+                kwargs["n_threads"] = self.n_threads
+            self._model = llama_class(**kwargs)
+        return self._model
+
+
+def _load_llama_class() -> Any:
+    from llama_cpp import Llama
+
+    return Llama
+
+
 def backend_from_env() -> ModelBackend:
     backend = os.getenv("VELVET_MODEL_BACKEND", "deterministic").strip().lower()
     if backend == "openai-compatible":
@@ -166,4 +214,33 @@ def backend_from_env() -> ModelBackend:
             model=os.getenv("VELVET_MODEL_NAME", "gemma-4-12b-it"),
             api_key=os.getenv("VELVET_OPENAI_API_KEY", ""),
         )
+    if backend in {"llama-cpp-python", "llama.cpp-python", "llamacpp-python"}:
+        return LlamaCppPythonBackend(
+            model_path=os.getenv("VELVET_LLAMA_CPP_MODEL_PATH", ""),
+            chat_format=os.getenv("VELVET_LLAMA_CPP_CHAT_FORMAT", ""),
+            n_ctx=_env_int("VELVET_LLAMA_CPP_N_CTX", 4096),
+            n_threads=_env_int("VELVET_LLAMA_CPP_N_THREADS", 0),
+        )
     return DeterministicMarloweBackend()
+
+
+def _chat_messages(
+    character_prompt: str,
+    history: list[ChatTurn],
+    state_summary: str,
+    player_message: str,
+) -> list[dict[str, str]]:
+    messages = [
+        {"role": "system", "content": character_prompt},
+        {"role": "system", "content": f"Current hidden state: {state_summary}"},
+    ]
+    messages.extend({"role": turn.role, "content": turn.content} for turn in history[-8:])
+    messages.append({"role": "user", "content": player_message})
+    return messages
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
