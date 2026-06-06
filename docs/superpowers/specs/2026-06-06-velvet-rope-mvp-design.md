@@ -156,6 +156,10 @@ Gradio UI
 
 No extra model is required for scoring in MVP. Gemma 4 12B supplies the in-character interpretation. The validator is deterministic code, so total model parameters stay at 12B.
 
+## UI Design Workflow
+
+When UI design begins, use the Figma plugin to explore and refine the custom Gradio interface before implementation. Figma should be used for layout, visual direction, component decisions, and mood-feedback presentation. The implemented UI should preserve the approved design intent rather than falling back to default Gradio styling.
+
 ## LoRA Plan
 
 Phase 1: Prompt Gemma 4 12B as Marlowe and validate the game loop.
