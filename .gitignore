@@ -218,6 +218,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Project planning files
+.superpowers/
 Velvet Rope Readme.md
 velvet-rope-brief.md
 
