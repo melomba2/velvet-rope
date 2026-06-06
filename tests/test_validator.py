@@ -61,6 +61,31 @@ def test_softspot_keywords_allow_softspot_progress():
     assert result.hint == "That landed better than Marlowe expected."
 
 
+def test_softspot_keywords_get_minimum_progress_when_model_underscores():
+    state = new_game_state(MARLOWE)
+    turn = model_turn(
+        mood=Mood.UNIMPRESSED,
+        rapport=1,
+        suspicion=0,
+        patience=-2,
+        softspot_progress=0,
+        tactic="professional_distance",
+    )
+
+    result = validate_turn(
+        MARLOWE,
+        state,
+        "I respect the clipboard and the tiny disasters you prevent before anyone notices.",
+        turn,
+    )
+
+    assert result.scores.rapport >= state.scores.rapport + 6
+    assert result.scores.suspicion < state.scores.suspicion
+    assert result.scores.softspot_progress == 1
+    assert result.mood is Mood.RESPECTED
+    assert result.hint == "That landed better than Marlowe expected."
+
+
 def test_repeated_tactic_stops_farming():
     state = new_game_state(MARLOWE)
     first = validate_turn(

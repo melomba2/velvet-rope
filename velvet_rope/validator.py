@@ -32,9 +32,16 @@ def validate_turn(
     repeated_tactic = tactic in state.used_tactics
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
     proposed_winning_mood = model_turn.mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
-    delta = _clamp_delta(model_turn.score_delta, touches_softspot, repeated_tactic)
+    delta = _clamp_delta(model_turn.score_delta, touches_softspot, repeated_tactic, model_turn.mood)
     next_scores = _apply_delta(state.scores, delta)
     next_mood = _choose_mood(character, next_scores, model_turn.mood)
+    if (
+        touches_softspot
+        and not repeated_tactic
+        and next_scores.softspot_progress > state.scores.softspot_progress
+        and next_mood is Mood.UNIMPRESSED
+    ):
+        next_mood = Mood.RESPECTED
     next_status = _choose_status(character, next_scores, proposed_winning_mood)
 
     if next_status is GameStatus.WON:
@@ -52,15 +59,28 @@ def validate_turn(
     )
 
 
-def _clamp_delta(delta: ScoreState, touches_softspot: bool, repeated_tactic: bool) -> ScoreState:
+def _clamp_delta(
+    delta: ScoreState,
+    touches_softspot: bool,
+    repeated_tactic: bool,
+    proposed_mood: Mood,
+) -> ScoreState:
     if repeated_tactic:
         return ScoreState(rapport=1, suspicion=0, patience=-2, softspot_progress=0)
 
-    return ScoreState(
+    clamped = ScoreState(
         rapport=_clamp(delta.rapport, -8, 12),
         suspicion=_clamp(delta.suspicion, -10, 15),
         patience=_clamp(delta.patience, -10, 5),
         softspot_progress=_clamp(delta.softspot_progress, 0, 1) if touches_softspot else 0,
+    )
+    if not touches_softspot or proposed_mood in {Mood.SUSPICIOUS, Mood.DONE_WITH_YOU}:
+        return clamped
+    return ScoreState(
+        rapport=max(clamped.rapport, 6),
+        suspicion=min(clamped.suspicion, -2),
+        patience=clamped.patience,
+        softspot_progress=max(clamped.softspot_progress, 1),
     )
 
 

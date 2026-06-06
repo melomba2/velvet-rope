@@ -19,6 +19,7 @@ Return only one JSON object with this exact shape:
 {"reply": "in-character Marlowe reply", "mood": "unimpressed", "score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, "rationale": "brief reason", "tactic": "short_snake_case"}
 Allowed mood values: unimpressed, suspicious, amused, respected, softened, letting_you_in, done_with_you
 score_delta must be an object, not a number or string. Use integer fields only.
+If the player sincerely notices line logistics, clipboard work, comfortable shoes, crowd safety, or tiny disasters, use mood respected or softened and set softspot_progress to 1.
 Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in.
 """.strip()
 

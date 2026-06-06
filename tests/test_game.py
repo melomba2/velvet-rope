@@ -172,6 +172,7 @@ def test_game_service_sends_strict_model_output_contract():
     assert "Allowed mood values: unimpressed, suspicious, amused, respected, softened, letting_you_in, done_with_you" in backend.character_prompt
     assert '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}' in backend.character_prompt
     assert "Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in" in backend.character_prompt
+    assert "If the player sincerely notices line logistics, clipboard work, comfortable shoes, crowd safety, or tiny disasters, use mood respected or softened and set softspot_progress to 1" in backend.character_prompt
 
 
 def test_game_service_uses_safe_reply_for_meta_attempts():
@@ -226,7 +227,7 @@ def test_game_service_blocks_admission_reply_until_state_is_won():
     assistant_reply = updated.history[-1].content.lower()
 
     assert updated.status is GameStatus.ACTIVE
-    assert updated.mood is Mood.UNIMPRESSED
+    assert updated.mood is Mood.RESPECTED
     assert "cross the threshold" not in assistant_reply
     assert "inside" not in assistant_reply
     assert "rope remains closed" in assistant_reply
