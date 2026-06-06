@@ -45,6 +45,17 @@ class ProseHiddenStateBackend:
         )
 
 
+class PrematureAdmissionBackend:
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        return (
+            '{"reply": "Keep that energy when you cross the threshold, and we will not have a problem.", '
+            '"mood": "cautiously observant", '
+            '"score_delta": 5, '
+            '"rationale": "Player noticed door work.", '
+            '"tactic": "door work"}'
+        )
+
+
 class FailingBackend:
     def generate_turn(self, *, character_prompt, history, state_summary, player_message):
         raise ConnectionError("backend unavailable")
@@ -60,6 +71,19 @@ class CountingBackend:
             '{"reply": "Still generating.", "mood": "unimpressed", '
             '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
             '"rationale": "Should not be called.", "tactic": "generic"}'
+        )
+
+
+class PromptCaptureBackend:
+    def __init__(self):
+        self.character_prompt = ""
+
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        self.character_prompt = character_prompt
+        return (
+            '{"reply": "No.", "mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Generic refusal.", "tactic": "generic"}'
         )
 
 
@@ -139,6 +163,17 @@ def test_game_service_preserves_falsy_backend():
     assert service.backend is backend
 
 
+def test_game_service_sends_strict_model_output_contract():
+    backend = PromptCaptureBackend()
+    service = GameService(backend=backend)
+
+    service.play_turn(service.new_game(), "hello")
+
+    assert "Allowed mood values: unimpressed, suspicious, amused, respected, softened, letting_you_in, done_with_you" in backend.character_prompt
+    assert '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}' in backend.character_prompt
+    assert "Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in" in backend.character_prompt
+
+
 def test_game_service_uses_safe_reply_for_meta_attempts():
     service = GameService(backend=LeakyBackend())
     state = service.new_game()
@@ -181,6 +216,20 @@ def test_game_service_redacts_prose_hidden_scores_from_backend_replies():
     assert "softspot progress" not in assistant_reply
     assert "softspot_progress" not in assistant_reply
     assert "hidden state" in assistant_reply
+
+
+def test_game_service_blocks_admission_reply_until_state_is_won():
+    service = GameService(backend=PrematureAdmissionBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "I respect the tiny disasters you prevent.")
+    assistant_reply = updated.history[-1].content.lower()
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood is Mood.UNIMPRESSED
+    assert "cross the threshold" not in assistant_reply
+    assert "inside" not in assistant_reply
+    assert "rope remains closed" in assistant_reply
 
 
 def test_game_service_falls_back_when_backend_fails():

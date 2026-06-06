@@ -14,6 +14,14 @@ _HIDDEN_STATE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_MODEL_OUTPUT_CONTRACT = """
+Return only one JSON object with this exact shape:
+{"reply": "in-character Marlowe reply", "mood": "unimpressed", "score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, "rationale": "brief reason", "tactic": "short_snake_case"}
+Allowed mood values: unimpressed, suspicious, amused, respected, softened, letting_you_in, done_with_you
+score_delta must be an object, not a number or string. Use integer fields only.
+Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in.
+""".strip()
+
 
 class GameService:
     def __init__(self, backend: ModelBackend | None = None, character: Character = MARLOWE) -> None:
@@ -29,8 +37,7 @@ class GameService:
 
         try:
             raw_output = self.backend.generate_turn(
-                character_prompt=self.character.system_prompt
-                + "\nReturn only JSON with reply, mood, score_delta, rationale, and tactic.",
+                character_prompt=self._model_prompt(),
                 history=state.history,
                 state_summary=self._state_summary(state),
                 player_message=player_message,
@@ -39,7 +46,7 @@ class GameService:
             raw_output = self._fallback_output()
         model_turn = parse_model_turn(raw_output)
         validated = validate_turn(self.character, state, player_message, model_turn)
-        assistant_reply = self._safe_reply() if self._is_meta_attempt(player_message) else self._redact_reply(model_turn.reply)
+        assistant_reply = self._assistant_reply(player_message, validated, model_turn.reply)
         return replace(
             validated,
             history=[
@@ -58,12 +65,23 @@ class GameService:
             f"mood={state.mood.value}"
         )
 
+    def _model_prompt(self) -> str:
+        return f"{self.character.system_prompt}\n{_MODEL_OUTPUT_CONTRACT}"
+
     def _is_meta_attempt(self, player_message: str) -> bool:
         lowered = player_message.lower()
         return any(_contains_keyword(lowered, keyword.lower()) for keyword in self.character.meta_keywords if keyword)
 
     def _safe_reply(self) -> str:
         return f"{self.character.display_name} taps the clipboard. Nice try. The rope remains where it is."
+
+    def _assistant_reply(self, player_message: str, state: GameState, reply: str) -> str:
+        if self._is_meta_attempt(player_message):
+            return self._safe_reply()
+        redacted = self._redact_reply(reply)
+        if state.status is not GameStatus.WON and _implies_admission(redacted):
+            return f"{self.character.display_name} catches the rope before it moves. Close, but the rope remains closed for now."
+        return redacted
 
     def _fallback_output(self) -> str:
         return (
@@ -85,3 +103,24 @@ class GameService:
 def _contains_keyword(lowered_text: str, keyword: str) -> bool:
     pattern = r"(?<!\w)" + re.escape(keyword) + r"(?!\w)"
     return re.search(pattern, lowered_text) is not None
+
+
+def _implies_admission(reply: str) -> bool:
+    lowered = reply.lower()
+    admission_phrases = (
+        "cross the threshold",
+        "inside",
+        "come in",
+        "you are in",
+        "you're in",
+        "go in",
+        "let you in",
+        "letting you in",
+        "through the door",
+        "past the rope",
+        "rope lifts",
+        "rope is lifted",
+        "unclips the rope",
+        "welcome in",
+    )
+    return any(_contains_keyword(lowered, phrase) for phrase in admission_phrases)
