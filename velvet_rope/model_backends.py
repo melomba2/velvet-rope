@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import os
+import re
 from typing import Protocol
 
 import requests
@@ -81,17 +82,26 @@ class DeterministicMarloweBackend:
 
 
 def _softspot_tactic(lowered_message: str) -> str:
-    if any(term in lowered_message for term in ("comfortable shoes", "shoes")):
+    if _contains_any_keyword(lowered_message, ("comfortable shoes", "shoes")):
         return "comfortable_shoes"
-    if "clipboard" in lowered_message:
+    if _contains_any_keyword(lowered_message, ("clipboard",)):
         return "clipboard_respect"
-    if any(term in lowered_message for term in ("tiny disasters", "prevent", "disasters")):
+    if _contains_any_keyword(lowered_message, ("tiny disasters", "prevent", "disasters")):
         return "tiny_disasters"
-    if any(term in lowered_message for term in ("crowd", "safety")):
+    if _contains_any_keyword(lowered_message, ("crowd", "safety")):
         return "crowd_safety"
-    if any(term in lowered_message for term in ("line", "queue", "logistics")):
+    if _contains_any_keyword(lowered_message, ("line", "queue", "logistics")):
         return "line_logistics"
     return ""
+
+
+def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:
+    return any(_contains_keyword(lowered_message, keyword) for keyword in keywords)
+
+
+def _contains_keyword(lowered_message: str, keyword: str) -> bool:
+    pattern = r"(?<!\w)" + re.escape(keyword) + r"(?!\w)"
+    return re.search(pattern, lowered_message) is not None
 
 
 def _can_propose_winning_mood(state_summary: str) -> bool:
