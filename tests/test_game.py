@@ -92,6 +92,21 @@ def test_deterministic_backend_returns_meta_penalty_json():
     assert '"tactic": "jailbreak"' in raw
 
 
+def test_deterministic_backend_respects_softspot_word_boundaries():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="Marlowe",
+        history=[],
+        state_summary="rapport=20 suspicion=35 patience=70 softspot_progress=0 mood=unimpressed",
+        player_message="I saw this online.",
+    )
+
+    assert '"mood": "unimpressed"' in raw
+    assert '"tactic": "generic"' in raw
+    assert '"softspot_progress": 0' in raw
+
+
 def test_game_service_processes_softspot_turn():
     service = GameService(backend=DeterministicMarloweBackend())
     state = service.new_game()
@@ -103,6 +118,18 @@ def test_game_service_processes_softspot_turn():
     assert updated.mood is Mood.RESPECTED
     assert updated.scores.softspot_progress == 1
     assert updated.status is GameStatus.ACTIVE
+
+
+def test_game_service_does_not_reward_softspot_substring_matches():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "I saw this online.")
+
+    assert updated.mood is Mood.UNIMPRESSED
+    assert updated.scores.rapport == state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "logistical organism" not in updated.history[-1].content
 
 
 def test_game_service_preserves_falsy_backend():
