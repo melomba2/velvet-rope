@@ -49,10 +49,11 @@ class DeterministicMarloweBackend:
             )
         tactic = _softspot_tactic(lowered)
         if tactic:
+            mood = "softened" if _can_propose_winning_mood(state_summary) else "respected"
             return json.dumps(
                 {
                     "reply": "You noticed the line as a logistical organism. Disturbing. Respectful, but disturbing.",
-                    "mood": "respected",
+                    "mood": mood,
                     "score_delta": {
                         "rapport": 12,
                         "suspicion": -5,
@@ -91,6 +92,22 @@ def _softspot_tactic(lowered_message: str) -> str:
     if any(term in lowered_message for term in ("line", "queue", "logistics")):
         return "line_logistics"
     return ""
+
+
+def _can_propose_winning_mood(state_summary: str) -> bool:
+    return _summary_score(state_summary, "rapport") >= 60 and _summary_score(state_summary, "softspot_progress") >= 2
+
+
+def _summary_score(state_summary: str, key: str) -> int:
+    prefix = f"{key}="
+    for part in state_summary.split():
+        if not part.startswith(prefix):
+            continue
+        try:
+            return int(part.removeprefix(prefix))
+        except ValueError:
+            return 0
+    return 0
 
 
 @dataclass(frozen=True)
