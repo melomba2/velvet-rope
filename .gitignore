@@ -216,3 +216,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project planning files
+Velvet Rope Readme.md
+velvet-rope-brief.md
+
+# macOS
+.DS_Store
+
+# Local model / training artifacts
+models/
+checkpoints/
+outputs/
+runs/
+wandb/
+mlruns/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# Local datasets / generated data
+data/raw/
+data/processed/
+data/generated/
+
+# Gradio runtime artifacts
+flagged/
+flagging/
