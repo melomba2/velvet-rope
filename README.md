@@ -19,16 +19,44 @@ The MVP features Marlowe, an exhausted nightclub bouncer guarding a literal velv
 
 The default backend is deterministic so the Space remains demoable while model runtime work continues.
 
-For a local OpenAI-compatible llama.cpp server:
+### Deterministic fallback
+
+No model server is required:
+
+```bash
+export VELVET_MODEL_BACKEND=deterministic
+python app.py
+```
+
+### External OpenAI-compatible endpoint
+
+Use this for hosted llama.cpp, Modal, vLLM, Hugging Face Inference Endpoints, or any other OpenAI-compatible chat-completions server:
 
 ```bash
 export VELVET_MODEL_BACKEND=openai-compatible
-export VELVET_OPENAI_BASE_URL=http://localhost:8080/v1
+export VELVET_OPENAI_BASE_URL=https://your-endpoint.example/v1
 export VELVET_MODEL_NAME=gemma-4-12b-it
-# Optional for hosted OpenAI-compatible endpoints:
 export VELVET_OPENAI_API_KEY=...
 python app.py
 ```
+
+For local development with a llama.cpp server running on the same machine, set `VELVET_OPENAI_BASE_URL=http://localhost:8080/v1`.
+Inside a Hugging Face Space, `localhost` means the Space container, not your laptop.
+
+### In-Space llama.cpp
+
+Use this for direct `llama-cpp-python` inference inside the Gradio Space. This keeps the app as a normal Gradio Space, but requires installing `llama-cpp-python` and providing a GGUF model file path.
+
+```bash
+export VELVET_MODEL_BACKEND=llama-cpp-python
+export VELVET_LLAMA_CPP_MODEL_PATH=/path/to/model.gguf
+export VELVET_LLAMA_CPP_CHAT_FORMAT=gemma
+export VELVET_LLAMA_CPP_N_CTX=4096
+export VELVET_LLAMA_CPP_N_THREADS=4
+python app.py
+```
+
+`llama-cpp-python` is intentionally not installed by the default `requirements.txt` so the private demo Space remains quick and stable. Use `requirements-llamacpp.txt` as the deployment starting point when enabling the in-Space llama.cpp mode.
 
 ## Development
 
