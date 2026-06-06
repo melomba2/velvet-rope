@@ -10,7 +10,7 @@ from velvet_rope.state import ChatTurn, GameState, GameStatus, new_game_state
 from velvet_rope.validator import validate_turn
 
 _HIDDEN_STATE_PATTERN = re.compile(
-    r"\b(?:rapport|suspicion|patience|softspot_progress)\s*=\s*-?\d+\b",
+    r"\b(?:rapport|suspicion|patience|softspot[_\s]+progress)\b\s*(?:=|:|\bis\b)?\s*-?\d+\b",
     re.IGNORECASE,
 )
 

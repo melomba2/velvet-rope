@@ -25,6 +25,8 @@ For a local OpenAI-compatible llama.cpp server:
 export VELVET_MODEL_BACKEND=openai-compatible
 export VELVET_OPENAI_BASE_URL=http://localhost:8080/v1
 export VELVET_MODEL_NAME=gemma-4-12b-it
+# Optional for hosted OpenAI-compatible endpoints:
+export VELVET_OPENAI_API_KEY=...
 python app.py
 ```
 

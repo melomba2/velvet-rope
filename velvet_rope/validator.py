@@ -7,6 +7,14 @@ from velvet_rope.characters import Character
 from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameState, GameStatus, Mood, ScoreState
 
+_SOFTSPOT_TACTIC_KEYWORDS = (
+    ("comfortable_shoes", ("comfortable shoes", "shoes")),
+    ("clipboard_respect", ("clipboard",)),
+    ("tiny_disasters", ("tiny disasters", "preventing disasters")),
+    ("crowd_safety", ("crowd", "safety", "door work")),
+    ("line_logistics", ("line", "queue", "logistics")),
+)
+
 
 def validate_turn(
     character: Character,
@@ -20,7 +28,7 @@ def validate_turn(
     if _contains_any(player_message, character.meta_keywords):
         return _apply_meta_penalty(character, state)
 
-    tactic = model_turn.tactic or "unspecified"
+    tactic = _normalized_tactic(player_message, model_turn.tactic)
     repeated_tactic = tactic in state.used_tactics
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
     proposed_winning_mood = model_turn.mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
@@ -129,6 +137,14 @@ def _hint_for(display_name: str, mood: Mood, touches_softspot: bool, repeated_ta
 def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
     lowered = text.lower()
     return any(_contains_keyword(lowered, needle.lower()) for needle in needles if needle)
+
+
+def _normalized_tactic(player_message: str, model_tactic: str) -> str:
+    for tactic, keywords in _SOFTSPOT_TACTIC_KEYWORDS:
+        if _contains_any(player_message, keywords):
+            return tactic
+    normalized = re.sub(r"\W+", "_", model_tactic.strip().lower()).strip("_")
+    return normalized or "unspecified"
 
 
 def _contains_keyword(lowered_text: str, needle: str) -> bool:
