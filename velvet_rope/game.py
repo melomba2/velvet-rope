@@ -11,7 +11,7 @@ from velvet_rope.validator import validate_turn
 
 class GameService:
     def __init__(self, backend: ModelBackend | None = None, character: Character = MARLOWE) -> None:
-        self.backend = backend or backend_from_env()
+        self.backend = backend if backend is not None else backend_from_env()
         self.character = character
 
     def new_game(self) -> GameState:
