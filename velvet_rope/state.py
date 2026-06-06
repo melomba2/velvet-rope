@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Protocol
 
 
 class Mood(str, Enum):
@@ -28,6 +29,12 @@ class ScoreState:
     softspot_progress: int
 
 
+class CharacterStateConfig(Protocol):
+    character_id: str
+    initial_scores: ScoreState
+    initial_mood: Mood
+
+
 @dataclass(frozen=True)
 class ChatTurn:
     role: str
@@ -45,7 +52,7 @@ class GameState:
     hint: str = ""
 
 
-def new_game_state(character: "Character") -> GameState:
+def new_game_state(character: CharacterStateConfig) -> GameState:
     return GameState(
         character_id=character.character_id,
         scores=character.initial_scores,
