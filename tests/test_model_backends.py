@@ -118,7 +118,7 @@ def test_backend_from_env_reads_huggingface_router_defaults(monkeypatch):
 
     assert isinstance(backend, OpenAICompatibleBackend)
     assert backend.base_url == "https://router.huggingface.co/v1"
-    assert backend.model == "google/gemma-4-12B-it"
+    assert backend.model == "google/gemma-4-26B-A4B-it"
     assert backend.api_key == "hf-secret-token"
 
 

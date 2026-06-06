@@ -21,14 +21,14 @@ The default backend is deterministic so local development remains demoable while
 
 ### Hugging Face Router / Inference Providers
 
-Recommended starting point for the Build Small Hackathon deployment. This keeps Velvet Rope as a normal Gradio Space while using Hugging Face infrastructure and credits for Gemma 4 12B inference:
+Recommended starting point for the Build Small Hackathon deployment. This keeps Velvet Rope as a normal Gradio Space while using Hugging Face infrastructure and credits for real Gemma inference. HF Router currently exposes Gemma 4 26B A4B as a chat model; it stays under the contest's 32B total-parameter cap and is the working Router default while Gemma 4 12B remains the local/llama.cpp target.
 
 ```bash
 export VELVET_MODEL_BACKEND=huggingface-router
 export HF_TOKEN=...
-export VELVET_MODEL_NAME=google/gemma-4-12B-it
+export VELVET_MODEL_NAME=google/gemma-4-26B-A4B-it
 export VELVET_MODEL_TEMPERATURE=0.8
-export VELVET_MODEL_MAX_TOKENS=320
+export VELVET_MODEL_MAX_TOKENS=512
 python app.py
 ```
 
@@ -53,7 +53,7 @@ export VELVET_OPENAI_BASE_URL=https://your-endpoint.example/v1
 export VELVET_MODEL_NAME=gemma-4-12b-it
 export VELVET_OPENAI_API_KEY=...
 export VELVET_MODEL_TEMPERATURE=0.8
-export VELVET_MODEL_MAX_TOKENS=320
+export VELVET_MODEL_MAX_TOKENS=512
 python app.py
 ```
 

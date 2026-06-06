@@ -216,7 +216,7 @@ def backend_from_env() -> ModelBackend:
     if backend in {"huggingface-router", "hf-router", "huggingface"}:
         return OpenAICompatibleBackend(
             base_url=os.getenv("VELVET_OPENAI_BASE_URL", "https://router.huggingface.co/v1"),
-            model=os.getenv("VELVET_MODEL_NAME", "google/gemma-4-12B-it"),
+            model=os.getenv("VELVET_MODEL_NAME", "google/gemma-4-26B-A4B-it"),
             api_key=_first_env("VELVET_OPENAI_API_KEY", "HF_TOKEN", "HF_API_TOKEN"),
             timeout_seconds=_env_int("VELVET_MODEL_TIMEOUT_SECONDS", 60),
             temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),

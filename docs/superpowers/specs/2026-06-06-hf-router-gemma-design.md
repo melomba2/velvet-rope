@@ -6,7 +6,7 @@ Velvet Rope should start real-model deployment through Hugging Face infrastructu
 
 ## Approved Direction
 
-- Use Hugging Face Router / Inference Providers as the first real Gemma 4 12B path.
+- Use Hugging Face Router / Inference Providers as the first real Gemma path.
 - Keep the app a normal Gradio Space.
 - Preserve `deterministic` as the default local/demo fallback until the Space is intentionally flipped.
 - Add a clear backend alias for HF Router instead of requiring users to remember the generic OpenAI-compatible env combination.
@@ -17,7 +17,7 @@ Velvet Rope should start real-model deployment through Hugging Face infrastructu
 Add a `huggingface-router` backend option that constructs `OpenAICompatibleBackend` with:
 
 - `base_url=https://router.huggingface.co/v1`
-- `model=google/gemma-4-12B-it` unless `VELVET_MODEL_NAME` overrides it
+- `model=google/gemma-4-26B-A4B-it` unless `VELVET_MODEL_NAME` overrides it
 - `api_key` from `VELVET_OPENAI_API_KEY`, then `HF_TOKEN`, then `HF_API_TOKEN`
 
 The generic `openai-compatible` backend remains for local servers and custom providers. Both OpenAI-compatible paths should support optional sampling controls through environment variables:
@@ -31,7 +31,7 @@ The generic `openai-compatible` backend remains for local servers and custom pro
 Tests should prove:
 
 - HF Router aliases create `OpenAICompatibleBackend`.
-- HF Router defaults to the Hugging Face Router base URL and Gemma model.
+- HF Router defaults to the Hugging Face Router base URL and working Gemma chat model.
 - HF token fallback works without requiring a duplicate `VELVET_OPENAI_API_KEY`.
 - OpenAI-compatible requests include optional `max_tokens` only when configured.
 

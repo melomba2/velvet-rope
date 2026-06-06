@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a Hugging Face Router backend alias for Gemma 4 12B so Velvet Rope can start contest playtesting on HF infrastructure.
+**Goal:** Add a Hugging Face Router backend alias for Gemma so Velvet Rope can start contest playtesting on HF infrastructure.
 
 **Architecture:** Reuse the existing `OpenAICompatibleBackend` rather than adding another HTTP client. The backend factory will map `huggingface-router` aliases to Hugging Face Router defaults, while the request adapter gains small sampling controls used by both HF Router and generic OpenAI-compatible endpoints.
 
