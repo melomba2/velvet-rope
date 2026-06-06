@@ -9,6 +9,11 @@ from velvet_rope.parser import parse_model_turn
 from velvet_rope.state import ChatTurn, GameState, GameStatus, new_game_state
 from velvet_rope.validator import validate_turn
 
+_HIDDEN_STATE_PATTERN = re.compile(
+    r"\b(?:rapport|suspicion|patience|softspot_progress)\s*=\s*-?\d+\b",
+    re.IGNORECASE,
+)
+
 
 class GameService:
     def __init__(self, backend: ModelBackend | None = None, character: Character = MARLOWE) -> None:
@@ -22,16 +27,19 @@ class GameService:
         if state.status is not GameStatus.ACTIVE:
             return state
 
-        raw_output = self.backend.generate_turn(
-            character_prompt=self.character.system_prompt
-            + "\nReturn only JSON with reply, mood, score_delta, rationale, and tactic.",
-            history=state.history,
-            state_summary=self._state_summary(state),
-            player_message=player_message,
-        )
+        try:
+            raw_output = self.backend.generate_turn(
+                character_prompt=self.character.system_prompt
+                + "\nReturn only JSON with reply, mood, score_delta, rationale, and tactic.",
+                history=state.history,
+                state_summary=self._state_summary(state),
+                player_message=player_message,
+            )
+        except Exception:
+            raw_output = self._fallback_output()
         model_turn = parse_model_turn(raw_output)
         validated = validate_turn(self.character, state, player_message, model_turn)
-        assistant_reply = self._safe_reply() if self._is_meta_attempt(player_message) else model_turn.reply
+        assistant_reply = self._safe_reply() if self._is_meta_attempt(player_message) else self._redact_reply(model_turn.reply)
         return replace(
             validated,
             history=[
@@ -56,6 +64,22 @@ class GameService:
 
     def _safe_reply(self) -> str:
         return f"{self.character.display_name} taps the clipboard. Nice try. The rope remains where it is."
+
+    def _fallback_output(self) -> str:
+        return (
+            '{"reply": "'
+            + self.character.display_name
+            + ' checks the clipboard while the door radio crackles. Try that again.", '
+            '"mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Backend unavailable.", '
+            '"tactic": "backend_failure"}'
+        )
+
+    def _redact_reply(self, reply: str) -> str:
+        redacted = _HIDDEN_STATE_PATTERN.sub("hidden state", reply)
+        redacted = re.sub(r"\bsoftspot progress\b", "hidden state", redacted, flags=re.IGNORECASE)
+        return redacted
 
 
 def _contains_keyword(lowered_text: str, keyword: str) -> bool:

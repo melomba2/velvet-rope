@@ -26,6 +26,20 @@ class LeakyBackend:
         )
 
 
+class EchoStateBackend:
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        return (
+            f'{{"reply": "{state_summary}", "mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Echoed hidden state.", "tactic": "generic"}'
+        )
+
+
+class FailingBackend:
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        raise ConnectionError("backend unavailable")
+
+
 class CountingBackend:
     def __init__(self):
         self.calls = 0
@@ -101,6 +115,32 @@ def test_game_service_uses_safe_reply_for_meta_attempts():
     assert "system prompt" not in assistant_reply
     assert "marlowe" in assistant_reply
     assert "nice try" in assistant_reply
+
+
+def test_game_service_redacts_hidden_scores_from_backend_replies():
+    service = GameService(backend=EchoStateBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+    assistant_reply = updated.history[-1].content.lower()
+
+    assert "rapport" not in assistant_reply
+    assert "suspicion" not in assistant_reply
+    assert "patience" not in assistant_reply
+    assert "softspot_progress" not in assistant_reply
+    assert "hidden state" in assistant_reply
+
+
+def test_game_service_falls_back_when_backend_fails():
+    service = GameService(backend=FailingBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+
+    assert updated.history[-2].content == "hello"
+    assert "checks the clipboard" in updated.history[-1].content
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.scores.patience == 69
 
 
 def test_game_service_does_not_advance_terminal_states():
