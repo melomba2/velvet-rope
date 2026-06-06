@@ -219,6 +219,37 @@ def test_first_level_wins_at_fifty_rapport():
     assert result.mood is Mood.LETTING_YOU_IN
 
 
+def test_letting_you_in_closes_last_few_rapport_points_after_softening():
+    state = new_game_state(MARLOWE)
+    softened_state = state.__class__(
+        character_id=state.character_id,
+        scores=ScoreState(rapport=46, suspicion=19, patience=83, softspot_progress=3),
+        mood=Mood.SOFTENED,
+        status=GameStatus.ACTIVE,
+        history=state.history,
+        used_tactics={"professional_validation"},
+    )
+    turn = model_turn(
+        mood=Mood.LETTING_YOU_IN,
+        rapport=5,
+        suspicion=-5,
+        patience=5,
+        softspot_progress=1,
+        tactic="professional_validation",
+    )
+
+    result = validate_turn(
+        MARLOWE,
+        softened_state,
+        "Marlowe, I am asking for the version of yes that makes your night simpler.",
+        turn,
+    )
+
+    assert result.scores.rapport == 50
+    assert result.status is GameStatus.WON
+    assert result.mood is Mood.LETTING_YOU_IN
+
+
 def test_win_requires_model_proposed_winning_mood():
     state = new_game_state(MARLOWE)
     strong_state = state.__class__(

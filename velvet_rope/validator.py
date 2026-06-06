@@ -33,6 +33,7 @@ def validate_turn(
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
     proposed_winning_mood = model_turn.mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
     delta = _clamp_delta(model_turn.score_delta, touches_softspot, repeated_tactic, model_turn.mood)
+    delta = _close_endgame_delta(character, state, model_turn.mood, delta)
     next_scores = _apply_delta(state.scores, delta)
     next_mood = _choose_mood(character, next_scores, model_turn.mood)
     if (
@@ -82,6 +83,30 @@ def _clamp_delta(
         patience=clamped.patience,
         softspot_progress=max(clamped.softspot_progress, 1),
     )
+
+
+def _close_endgame_delta(
+    character: Character,
+    state: GameState,
+    proposed_mood: Mood,
+    delta: ScoreState,
+) -> ScoreState:
+    missing_rapport = character.win_rapport - state.scores.rapport
+    if (
+        proposed_mood is Mood.LETTING_YOU_IN
+        and state.mood is Mood.SOFTENED
+        and 0 < missing_rapport <= 5
+        and state.scores.suspicion <= character.max_win_suspicion
+        and state.scores.patience > 0
+        and state.scores.softspot_progress >= character.min_win_softspot_progress
+    ):
+        return ScoreState(
+            rapport=max(delta.rapport, missing_rapport),
+            suspicion=min(delta.suspicion, 0),
+            patience=delta.patience,
+            softspot_progress=delta.softspot_progress,
+        )
+    return delta
 
 
 def _apply_delta(scores: ScoreState, delta: ScoreState) -> ScoreState:
