@@ -193,6 +193,32 @@ def test_win_requires_scores_and_winning_mood():
     assert result.mood is Mood.LETTING_YOU_IN
 
 
+def test_first_level_wins_at_fifty_rapport():
+    state = new_game_state(MARLOWE)
+    strong_state = state.__class__(
+        character_id=state.character_id,
+        scores=ScoreState(rapport=49, suspicion=20, patience=80, softspot_progress=3),
+        mood=Mood.SOFTENED,
+        status=GameStatus.ACTIVE,
+        history=state.history,
+        used_tactics=state.used_tactics,
+    )
+    turn = model_turn(
+        mood=Mood.SOFTENED,
+        rapport=1,
+        suspicion=0,
+        patience=-1,
+        softspot_progress=0,
+        tactic="professional_alignment",
+    )
+
+    result = validate_turn(MARLOWE, strong_state, "I will be one less problem outside the rope.", turn)
+
+    assert result.scores.rapport == 50
+    assert result.status is GameStatus.WON
+    assert result.mood is Mood.LETTING_YOU_IN
+
+
 def test_win_requires_model_proposed_winning_mood():
     state = new_game_state(MARLOWE)
     strong_state = state.__class__(

@@ -40,7 +40,7 @@ MARLOWE = Character(
         softspot_progress=0,
     ),
     initial_mood=Mood.UNIMPRESSED,
-    win_rapport=75,
+    win_rapport=50,
     max_win_suspicion=45,
     min_win_softspot_progress=2,
     softspot_keywords=(
