@@ -17,11 +17,26 @@ The MVP features Marlowe, an exhausted nightclub bouncer guarding a literal velv
 
 ## Runtime
 
-The default backend is deterministic so the Space remains demoable while model runtime work continues.
+The default backend is deterministic so local development remains demoable while model runtime work continues. The contest deployment should use a real small model backend so Marlowe's voice, mood shifts, and persuasion scoring are load-bearing AI behavior.
+
+### Hugging Face Router / Inference Providers
+
+Recommended starting point for the Build Small Hackathon deployment. This keeps Velvet Rope as a normal Gradio Space while using Hugging Face infrastructure and credits for Gemma 4 12B inference:
+
+```bash
+export VELVET_MODEL_BACKEND=huggingface-router
+export HF_TOKEN=...
+export VELVET_MODEL_NAME=google/gemma-4-12B-it
+export VELVET_MODEL_TEMPERATURE=0.8
+export VELVET_MODEL_MAX_TOKENS=320
+python app.py
+```
+
+You can also set `VELVET_OPENAI_API_KEY` instead of `HF_TOKEN`. If both are present, `VELVET_OPENAI_API_KEY` wins. The HF Router backend defaults to `https://router.huggingface.co/v1`, but `VELVET_OPENAI_BASE_URL` can override it for testing.
 
 ### Deterministic fallback
 
-No model server is required:
+No model server is required. Use this for local development, UI work, and fallback smoke tests, not as the intended final contest backend:
 
 ```bash
 export VELVET_MODEL_BACKEND=deterministic
@@ -37,6 +52,8 @@ export VELVET_MODEL_BACKEND=openai-compatible
 export VELVET_OPENAI_BASE_URL=https://your-endpoint.example/v1
 export VELVET_MODEL_NAME=gemma-4-12b-it
 export VELVET_OPENAI_API_KEY=...
+export VELVET_MODEL_TEMPERATURE=0.8
+export VELVET_MODEL_MAX_TOKENS=320
 python app.py
 ```
 

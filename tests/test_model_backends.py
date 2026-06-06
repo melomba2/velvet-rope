@@ -40,16 +40,86 @@ def test_openai_compatible_backend_sends_bearer_token_when_configured(monkeypatc
     assert captured["json"]["messages"][1] == {"role": "system", "content": "Current hidden state: rapport=20"}
 
 
+def test_openai_compatible_backend_includes_max_tokens_when_configured(monkeypatch):
+    captured = {}
+
+    def fake_post(url, *, json, timeout, headers=None):
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setattr("velvet_rope.model_backends.requests.post", fake_post)
+    backend = OpenAICompatibleBackend(
+        base_url="https://example.test/v1",
+        model="gemma-4-12B-it",
+        temperature=0.35,
+        max_tokens=320,
+    )
+
+    backend.generate_turn(
+        character_prompt="Marlowe",
+        history=[],
+        state_summary="rapport=20",
+        player_message="hello",
+    )
+
+    assert captured["json"]["temperature"] == 0.35
+    assert captured["json"]["max_tokens"] == 320
+
+
+def test_openai_compatible_backend_omits_max_tokens_when_unset(monkeypatch):
+    captured = {}
+
+    def fake_post(url, *, json, timeout, headers=None):
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setattr("velvet_rope.model_backends.requests.post", fake_post)
+    backend = OpenAICompatibleBackend(
+        base_url="https://example.test/v1",
+        model="gemma-4-12B-it",
+    )
+
+    backend.generate_turn(
+        character_prompt="Marlowe",
+        history=[],
+        state_summary="rapport=20",
+        player_message="hello",
+    )
+
+    assert "max_tokens" not in captured["json"]
+
+
 def test_backend_from_env_reads_openai_api_key(monkeypatch):
     monkeypatch.setenv("VELVET_MODEL_BACKEND", "openai-compatible")
     monkeypatch.setenv("VELVET_OPENAI_BASE_URL", "https://example.test/v1")
     monkeypatch.setenv("VELVET_MODEL_NAME", "gemma-4-12b-it")
     monkeypatch.setenv("VELVET_OPENAI_API_KEY", "secret-token")
+    monkeypatch.setenv("VELVET_MODEL_TIMEOUT_SECONDS", "30")
+    monkeypatch.setenv("VELVET_MODEL_TEMPERATURE", "0.4")
+    monkeypatch.setenv("VELVET_MODEL_MAX_TOKENS", "256")
 
     backend = backend_from_env()
 
     assert isinstance(backend, OpenAICompatibleBackend)
     assert backend.api_key == "secret-token"
+    assert backend.timeout_seconds == 30
+    assert backend.temperature == 0.4
+    assert backend.max_tokens == 256
+
+
+def test_backend_from_env_reads_huggingface_router_defaults(monkeypatch):
+    monkeypatch.setenv("VELVET_MODEL_BACKEND", "huggingface-router")
+    monkeypatch.setenv("HF_TOKEN", "hf-secret-token")
+    monkeypatch.delenv("VELVET_OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("VELVET_MODEL_NAME", raising=False)
+    monkeypatch.delenv("VELVET_OPENAI_API_KEY", raising=False)
+
+    backend = backend_from_env()
+
+    assert isinstance(backend, OpenAICompatibleBackend)
+    assert backend.base_url == "https://router.huggingface.co/v1"
+    assert backend.model == "google/gemma-4-12B-it"
+    assert backend.api_key == "hf-secret-token"
 
 
 class FakeLlama:

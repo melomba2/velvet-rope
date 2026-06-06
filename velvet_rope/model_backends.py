@@ -126,6 +126,8 @@ class OpenAICompatibleBackend:
     model: str
     api_key: str = ""
     timeout_seconds: int = 60
+    temperature: float = 0.8
+    max_tokens: int = 0
 
     def generate_turn(
         self,
@@ -136,14 +138,17 @@ class OpenAICompatibleBackend:
         player_message: str,
     ) -> str:
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key.strip() else None
+        request_json: dict[str, Any] = {
+            "model": self.model,
+            "messages": _chat_messages(character_prompt, history, state_summary, player_message),
+            "temperature": self.temperature,
+            "response_format": {"type": "json_object"},
+        }
+        if self.max_tokens > 0:
+            request_json["max_tokens"] = self.max_tokens
         response = requests.post(
             f"{self.base_url.rstrip('/')}/chat/completions",
-            json={
-                "model": self.model,
-                "messages": _chat_messages(character_prompt, history, state_summary, player_message),
-                "temperature": 0.8,
-                "response_format": {"type": "json_object"},
-            },
+            json=request_json,
             timeout=self.timeout_seconds,
             headers=headers,
         )
@@ -208,11 +213,23 @@ def _load_llama_class() -> Any:
 
 def backend_from_env() -> ModelBackend:
     backend = os.getenv("VELVET_MODEL_BACKEND", "deterministic").strip().lower()
+    if backend in {"huggingface-router", "hf-router", "huggingface"}:
+        return OpenAICompatibleBackend(
+            base_url=os.getenv("VELVET_OPENAI_BASE_URL", "https://router.huggingface.co/v1"),
+            model=os.getenv("VELVET_MODEL_NAME", "google/gemma-4-12B-it"),
+            api_key=_first_env("VELVET_OPENAI_API_KEY", "HF_TOKEN", "HF_API_TOKEN"),
+            timeout_seconds=_env_int("VELVET_MODEL_TIMEOUT_SECONDS", 60),
+            temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),
+            max_tokens=_env_int("VELVET_MODEL_MAX_TOKENS", 0),
+        )
     if backend == "openai-compatible":
         return OpenAICompatibleBackend(
             base_url=os.getenv("VELVET_OPENAI_BASE_URL", "http://localhost:8080/v1"),
             model=os.getenv("VELVET_MODEL_NAME", "gemma-4-12b-it"),
             api_key=os.getenv("VELVET_OPENAI_API_KEY", ""),
+            timeout_seconds=_env_int("VELVET_MODEL_TIMEOUT_SECONDS", 60),
+            temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),
+            max_tokens=_env_int("VELVET_MODEL_MAX_TOKENS", 0),
         )
     if backend in {"llama-cpp-python", "llama.cpp-python", "llamacpp-python"}:
         return LlamaCppPythonBackend(
@@ -244,3 +261,18 @@ def _env_int(name: str, default: int) -> int:
         return int(os.getenv(name, str(default)))
     except ValueError:
         return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+def _first_env(*names: str) -> str:
+    for name in names:
+        value = os.getenv(name, "")
+        if value.strip():
+            return value
+    return ""
