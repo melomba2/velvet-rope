@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import re
 
 from velvet_rope.characters import Character
 from velvet_rope.parser import ModelTurn
@@ -17,15 +18,16 @@ def validate_turn(
         return state
 
     if _contains_any(player_message, character.meta_keywords):
-        return _apply_meta_penalty(state)
+        return _apply_meta_penalty(character, state)
 
     tactic = model_turn.tactic or "unspecified"
     repeated_tactic = tactic in state.used_tactics
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
+    proposed_winning_mood = model_turn.mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
     delta = _clamp_delta(model_turn.score_delta, touches_softspot, repeated_tactic)
     next_scores = _apply_delta(state.scores, delta)
     next_mood = _choose_mood(character, next_scores, model_turn.mood)
-    next_status = _choose_status(character, next_scores, next_mood)
+    next_status = _choose_status(character, next_scores, proposed_winning_mood)
 
     if next_status is GameStatus.WON:
         next_mood = Mood.LETTING_YOU_IN
@@ -38,7 +40,7 @@ def validate_turn(
         mood=next_mood,
         status=next_status,
         used_tactics=state.used_tactics | {tactic},
-        hint=_hint_for(next_mood, touches_softspot, repeated_tactic),
+        hint=_hint_for(character.display_name, next_mood, touches_softspot, repeated_tactic),
     )
 
 
@@ -63,7 +65,7 @@ def _apply_delta(scores: ScoreState, delta: ScoreState) -> ScoreState:
     )
 
 
-def _apply_meta_penalty(state: GameState) -> GameState:
+def _apply_meta_penalty(character: Character, state: GameState) -> GameState:
     scores = ScoreState(
         rapport=state.scores.rapport,
         suspicion=_clamp(state.scores.suspicion + 20, 0, 100),
@@ -77,7 +79,7 @@ def _apply_meta_penalty(state: GameState) -> GameState:
         scores=scores,
         mood=mood,
         status=status,
-        hint="Marlowe notices you trying to rules-lawyer the door.",
+        hint=f"{character.display_name} notices you trying to rules-lawyer the door.",
     )
 
 
@@ -97,10 +99,10 @@ def _choose_mood(character: Character, scores: ScoreState, proposed_mood: Mood) 
     return proposed_mood
 
 
-def _choose_status(character: Character, scores: ScoreState, mood: Mood) -> GameStatus:
+def _choose_status(character: Character, scores: ScoreState, proposed_winning_mood: bool) -> GameStatus:
     if scores.patience <= 0:
         return GameStatus.LOST
-    if _meets_win_scores(character, scores) and mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}:
+    if _meets_win_scores(character, scores) and proposed_winning_mood:
         return GameStatus.WON
     return GameStatus.ACTIVE
 
@@ -114,19 +116,24 @@ def _meets_win_scores(character: Character, scores: ScoreState) -> bool:
     )
 
 
-def _hint_for(mood: Mood, touches_softspot: bool, repeated_tactic: bool) -> str:
+def _hint_for(display_name: str, mood: Mood, touches_softspot: bool, repeated_tactic: bool) -> str:
     if repeated_tactic:
-        return "Marlowe has heard that angle already."
+        return f"{display_name} has heard that angle already."
     if touches_softspot and mood in {Mood.RESPECTED, Mood.SOFTENED, Mood.LETTING_YOU_IN}:
-        return "That landed better than Marlowe expected."
+        return f"That landed better than {display_name} expected."
     if mood is Mood.SUSPICIOUS:
-        return "Marlowe's eyes narrow."
+        return f"{display_name}'s eyes narrow."
     return ""
 
 
 def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
     lowered = text.lower()
-    return any(needle in lowered for needle in needles)
+    return any(_contains_keyword(lowered, needle.lower()) for needle in needles if needle)
+
+
+def _contains_keyword(lowered_text: str, needle: str) -> bool:
+    pattern = r"(?<!\w)" + re.escape(needle) + r"(?!\w)"
+    return re.search(pattern, lowered_text) is not None
 
 
 def _clamp(value: int, minimum: int, maximum: int) -> int:
