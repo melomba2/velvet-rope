@@ -1,6 +1,6 @@
 ---
 title: Velvet Rope
-emoji: VR
+emoji: 🚪
 colorFrom: red
 colorTo: yellow
 sdk: gradio
