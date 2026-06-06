@@ -219,6 +219,7 @@ __marimo__/
 
 # Project planning files
 .superpowers/
+.worktrees/
 Velvet Rope Readme.md
 velvet-rope-brief.md
 
