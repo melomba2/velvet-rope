@@ -118,7 +118,7 @@ def _choose_mood(character: Character, scores: ScoreState, proposed_mood: Mood) 
         return Mood.LETTING_YOU_IN
     if scores.suspicion >= 60:
         return Mood.SUSPICIOUS
-    if scores.softspot_progress >= 2 and scores.rapport >= 60:
+    if scores.softspot_progress >= character.min_win_softspot_progress:
         return Mood.SOFTENED
     if scores.rapport >= 45:
         return Mood.RESPECTED

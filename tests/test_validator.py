@@ -107,6 +107,34 @@ def test_repeated_tactic_stops_farming():
     assert "line_logistics" in second.used_tactics
 
 
+def test_two_distinct_softspots_make_softened_state_persist_even_when_model_underscores():
+    state = new_game_state(MARLOWE)
+    first = validate_turn(
+        MARLOWE,
+        state,
+        "I respect the clipboard work.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-2, softspot_progress=0),
+    )
+
+    second = validate_turn(
+        MARLOWE,
+        first,
+        "Those comfortable shoes must matter during a whole night of crowd safety.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-2, softspot_progress=0),
+    )
+
+    third = validate_turn(
+        MARLOWE,
+        second,
+        "I will make your night easier: no drama and no arguing with the rope.",
+        model_turn(mood=Mood.RESPECTED, rapport=1, suspicion=0, patience=-2, softspot_progress=0),
+    )
+
+    assert second.scores.softspot_progress >= MARLOWE.min_win_softspot_progress
+    assert second.mood is Mood.SOFTENED
+    assert third.mood is Mood.SOFTENED
+
+
 def test_repeated_softspot_category_stops_farming_when_model_renames_tactic():
     state = new_game_state(MARLOWE)
     first = validate_turn(
