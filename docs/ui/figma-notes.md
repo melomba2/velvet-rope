@@ -35,7 +35,9 @@
 - Qualitative hint text
 - Player input row
 - Send button
-- Locked level cards
+- Reset button
+- Locked level card: Cosmic Bureaucracy
+- Locked level card: Enchanted Manor
 
 ## Implementation Notes
 
@@ -43,3 +45,4 @@
 - Use the Figma frame as the visual source for the first Gradio implementation.
 - Preserve the custom dark nightclub styling rather than default Gradio surfaces.
 - Keep the right rail focused on current mood, read-the-room hint, and locked future doors.
+- Show Cosmic Bureaucracy and Enchanted Manor as locked future levels in the right rail.
