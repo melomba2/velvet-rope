@@ -3,6 +3,18 @@ from velvet_rope.game import GameService
 from velvet_rope.state import GameStatus, Mood
 
 
+class FalsyBackend:
+    def __bool__(self):
+        return False
+
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        return (
+            '{"reply": "No.", "mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Generic refusal.", "tactic": "generic"}'
+        )
+
+
 def test_deterministic_backend_returns_structured_softspot_json():
     backend = DeterministicMarloweBackend()
 
@@ -43,6 +55,13 @@ def test_game_service_processes_softspot_turn():
     assert updated.mood is Mood.RESPECTED
     assert updated.scores.softspot_progress == 1
     assert updated.status is GameStatus.ACTIVE
+
+
+def test_game_service_preserves_falsy_backend():
+    backend = FalsyBackend()
+    service = GameService(backend=backend)
+
+    assert service.backend is backend
 
 
 def test_game_service_can_win_after_two_distinct_softspots():
