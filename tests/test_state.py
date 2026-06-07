@@ -20,6 +20,11 @@ def test_new_game_initializes_marlowe_state():
     assert state.scores.patience == 70
     assert state.scores.softspot_progress == 0
     assert state.history == []
+
+
+def test_new_game_starts_without_used_tactics():
+    state = new_game_state(MARLOWE)
+
     assert state.used_tactics == set()
 
 

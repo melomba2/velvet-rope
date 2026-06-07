@@ -268,3 +268,32 @@ def test_game_service_can_win_after_two_distinct_softspots():
 
     assert state.status is GameStatus.WON
     assert state.mood is Mood.LETTING_YOU_IN
+
+
+def test_repeating_line_logistics_cannot_win_game():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    for message in (
+        "I respect how you manage the line logistics.",
+        "The line logistics are clearly the whole job.",
+        "Honestly, line logistics again. Very impressive.",
+        "One more note about line logistics.",
+    ):
+        state = service.play_turn(state, message)
+
+    assert state.status is GameStatus.ACTIVE
+    assert state.scores.softspot_progress == 1
+
+
+def test_two_distinct_softspot_reads_win_game_with_deterministic_backend():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    state = service.play_turn(state, "I respect how you manage the line logistics before anyone notices.")
+    state = service.play_turn(state, "Also, your shoes must be doing heroic work while you keep everyone safe.")
+    state = service.play_turn(state, "And preventing tiny disasters at this door is real civic labor.")
+
+    assert state.status is GameStatus.WON
+    assert state.mood is Mood.LETTING_YOU_IN
+    assert "rope" in state.history[-1].content.lower()

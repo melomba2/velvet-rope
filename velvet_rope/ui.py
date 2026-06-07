@@ -387,7 +387,7 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                         )
                         player_input = gr.Textbox(
                             label="Say something to Marlowe",
-                            placeholder="Try reading the room. Marlowe respects door-work specificity.",
+                            placeholder="Read the room. Specific respect lands better than flattery.",
                             lines=2,
                             max_lines=3,
                         )
@@ -521,7 +521,7 @@ def _hint_text(state: GameState) -> str:
         return "Not tonight. Marlowe has found peace in the word no."
     if state.hint:
         return state.hint
-    return "Watch the mood, speak to the job in front of you, and skip the tricks."
+    return "Watch the mood. Marlowe responds to specific reads of the job, not generic charm."
 
 
 def _status_line(state: GameState) -> str:

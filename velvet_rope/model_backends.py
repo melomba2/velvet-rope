@@ -6,8 +6,6 @@ import os
 import re
 from typing import Any, Protocol
 
-import requests
-
 from velvet_rope.state import ChatTurn
 
 
@@ -50,10 +48,10 @@ class DeterministicMarloweBackend:
             )
         tactic = _softspot_tactic(lowered)
         if tactic:
-            mood = "softened" if _can_propose_winning_mood(state_summary) else "respected"
+            mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
             return json.dumps(
                 {
-                    "reply": "You noticed the line as a logistical organism. Disturbing. Respectful, but disturbing.",
+                    "reply": _softspot_reply(tactic, mood),
                     "mood": mood,
                     "score_delta": {
                         "rapport": 12,
@@ -83,9 +81,9 @@ class DeterministicMarloweBackend:
 
 def _softspot_tactic(lowered_message: str) -> str:
     if _contains_any_keyword(lowered_message, ("comfortable shoes", "shoes")):
-        return "comfortable_shoes"
+        return "comfort_empathy"
     if _contains_any_keyword(lowered_message, ("clipboard",)):
-        return "clipboard_respect"
+        return "line_logistics"
     if _contains_any_keyword(lowered_message, ("tiny disasters", "prevent", "disasters")):
         return "tiny_disasters"
     if _contains_any_keyword(lowered_message, ("crowd", "safety")):
@@ -93,6 +91,18 @@ def _softspot_tactic(lowered_message: str) -> str:
     if _contains_any_keyword(lowered_message, ("line", "queue", "logistics")):
         return "line_logistics"
     return ""
+
+
+def _softspot_reply(tactic: str, mood: str) -> str:
+    if mood == "letting_you_in":
+        return "Marlowe exhales, unclips the rope, and mutters, 'Fine. Anyone who notices the labor may briefly enjoy bass.'"
+    replies = {
+        "line_logistics": "You noticed the line as a logistical organism. Disturbing. Respectful, but disturbing.",
+        "comfort_empathy": "Marlowe glances at the shoes. 'Finally, a person with eyes and compassion below knee level.'",
+        "tiny_disasters": "Marlowe's clipboard dips. 'Preventing tiny disasters is, regrettably, my art form.'",
+        "crowd_safety": "Marlowe watches the line, then you. 'Safety is less glamorous than bass, but much harder.'",
+    }
+    return replies.get(tactic, "Marlowe makes a note that may not be hostile.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:
@@ -105,7 +115,7 @@ def _contains_keyword(lowered_message: str, keyword: str) -> bool:
 
 
 def _can_propose_winning_mood(state_summary: str) -> bool:
-    return _summary_score(state_summary, "rapport") >= 60 and _summary_score(state_summary, "softspot_progress") >= 2
+    return _summary_score(state_summary, "rapport") >= 44 and _summary_score(state_summary, "softspot_progress") >= 2
 
 
 def _summary_score(state_summary: str, key: str) -> int:
@@ -118,6 +128,20 @@ def _summary_score(state_summary: str, key: str) -> int:
         except ValueError:
             return 0
     return 0
+
+
+def _post_chat_completion(
+    url: str,
+    *,
+    json: dict[str, Any],
+    timeout: int,
+    headers: dict[str, str] | None,
+):
+    try:
+        import requests
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("Install requests before using an OpenAI-compatible backend.") from exc
+    return requests.post(url, json=json, timeout=timeout, headers=headers)
 
 
 @dataclass(frozen=True)
@@ -146,7 +170,7 @@ class OpenAICompatibleBackend:
         }
         if self.max_tokens > 0:
             request_json["max_tokens"] = self.max_tokens
-        response = requests.post(
+        response = _post_chat_completion(
             f"{self.base_url.rstrip('/')}/chat/completions",
             json=request_json,
             timeout=self.timeout_seconds,

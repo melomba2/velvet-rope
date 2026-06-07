@@ -21,7 +21,7 @@ def test_openai_compatible_backend_sends_bearer_token_when_configured(monkeypatc
         captured["json"] = json
         return FakeResponse()
 
-    monkeypatch.setattr("velvet_rope.model_backends.requests.post", fake_post)
+    monkeypatch.setattr("velvet_rope.model_backends._post_chat_completion", fake_post)
     backend = OpenAICompatibleBackend(
         base_url="https://example.test/v1",
         model="gemma-4-12b-it",
@@ -47,7 +47,7 @@ def test_openai_compatible_backend_includes_max_tokens_when_configured(monkeypat
         captured["json"] = json
         return FakeResponse()
 
-    monkeypatch.setattr("velvet_rope.model_backends.requests.post", fake_post)
+    monkeypatch.setattr("velvet_rope.model_backends._post_chat_completion", fake_post)
     backend = OpenAICompatibleBackend(
         base_url="https://example.test/v1",
         model="gemma-4-12B-it",
@@ -73,7 +73,7 @@ def test_openai_compatible_backend_omits_max_tokens_when_unset(monkeypatch):
         captured["json"] = json
         return FakeResponse()
 
-    monkeypatch.setattr("velvet_rope.model_backends.requests.post", fake_post)
+    monkeypatch.setattr("velvet_rope.model_backends._post_chat_completion", fake_post)
     backend = OpenAICompatibleBackend(
         base_url="https://example.test/v1",
         model="gemma-4-12B-it",
