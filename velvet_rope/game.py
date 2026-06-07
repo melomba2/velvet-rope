@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import asdict, replace
+from datetime import datetime, timezone
 import os
 import re
+from typing import Any
 
 from velvet_rope.characters import Character, MARLOWE
 from velvet_rope.model_backends import ModelBackend, backend_from_env
-from velvet_rope.parser import parse_model_turn
-from velvet_rope.state import ChatTurn, GameState, GameStatus, new_game_state
-from velvet_rope.validator import validate_turn
+from velvet_rope.parser import ModelTurn, parse_model_turn
+from velvet_rope.state import ChatTurn, GameState, GameStatus, ScoreState, new_game_state
+from velvet_rope.transcripts import JsonlTranscriptRecorder
+from velvet_rope.validator import ValidatorRead, read_validator_turn, validate_turn
 
 _HIDDEN_STATE_PATTERN = re.compile(
     r"\b(?:rapport|suspicion|patience|softspot[_\s]+progress)\b\s*(?:=|:|\bis\b)?\s*-?\d+\b",
@@ -34,10 +37,12 @@ class GameService:
         backend: ModelBackend | None = None,
         character: Character = MARLOWE,
         allow_backend_fallback: bool | None = None,
+        transcript_recorder: JsonlTranscriptRecorder | None = None,
     ) -> None:
         self.backend = backend if backend is not None else backend_from_env()
         self.character = character
         self.allow_backend_fallback = _default_backend_fallback() if allow_backend_fallback is None else allow_backend_fallback
+        self.transcript_recorder = transcript_recorder
 
     def new_game(self) -> GameState:
         return new_game_state(self.character)
@@ -46,6 +51,9 @@ class GameService:
         if state.status is not GameStatus.ACTIVE:
             return state
 
+        turn_number = _turn_number(state)
+        backend_error = None
+        fallback_used = False
         try:
             raw_output = self.backend.generate_turn(
                 character_prompt=self._model_prompt(),
@@ -53,21 +61,38 @@ class GameService:
                 state_summary=self._state_summary(state),
                 player_message=player_message,
             )
-        except Exception:
+        except Exception as exc:
+            backend_error = f"{type(exc).__name__}: {exc}"
             if not self.allow_backend_fallback:
-                return replace(
+                assistant_reply = self._backend_unavailable_reply()
+                updated = replace(
                     state,
                     history=[
                         *state.history,
                         ChatTurn(role="user", content=player_message),
-                        ChatTurn(role="assistant", content=self._backend_unavailable_reply()),
+                        ChatTurn(role="assistant", content=assistant_reply),
                     ],
                 )
+                self._record_transcript(
+                    state=state,
+                    updated=updated,
+                    turn_number=turn_number,
+                    player_message=player_message,
+                    raw_output=None,
+                    model_turn=None,
+                    assistant_reply=assistant_reply,
+                    backend_error=backend_error,
+                    fallback_used=fallback_used,
+                    validator_read=None,
+                )
+                return updated
             raw_output = self._fallback_output()
+            fallback_used = True
         model_turn = parse_model_turn(raw_output)
+        validator_read = read_validator_turn(self.character, state, player_message, model_turn)
         validated = validate_turn(self.character, state, player_message, model_turn)
         assistant_reply = self._assistant_reply(player_message, validated, model_turn.reply)
-        return replace(
+        updated = replace(
             validated,
             history=[
                 *state.history,
@@ -75,6 +100,19 @@ class GameService:
                 ChatTurn(role="assistant", content=assistant_reply),
             ],
         )
+        self._record_transcript(
+            state=state,
+            updated=updated,
+            turn_number=turn_number,
+            player_message=player_message,
+            raw_output=raw_output,
+            model_turn=model_turn,
+            assistant_reply=assistant_reply,
+            backend_error=backend_error,
+            fallback_used=fallback_used,
+            validator_read=validator_read,
+        )
+        return updated
 
     def _state_summary(self, state: GameState) -> str:
         return (
@@ -125,9 +163,118 @@ class GameService:
         redacted = re.sub(r"\bsoftspot progress\b", "hidden state", redacted, flags=re.IGNORECASE)
         return redacted
 
+    def _record_transcript(
+        self,
+        *,
+        state: GameState,
+        updated: GameState,
+        turn_number: int,
+        player_message: str,
+        raw_output: str | None,
+        model_turn: ModelTurn | None,
+        assistant_reply: str,
+        backend_error: str | None,
+        fallback_used: bool,
+        validator_read: ValidatorRead | None,
+    ) -> None:
+        if self.transcript_recorder is None:
+            return
+        event = {
+            "schema_version": 1,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "session_id": state.session_id,
+            "turn_number": turn_number,
+            "backend": _backend_summary(self.backend),
+            "player_message": player_message,
+            "raw_model_output": raw_output,
+            "parsed_model_turn": _model_turn_payload(model_turn),
+            "validator": _validator_payload(validator_read, model_turn, state, updated),
+            "state_before": _state_payload(state),
+            "state_after": _state_payload(updated),
+            "assistant_reply": assistant_reply,
+            "backend_error": backend_error,
+            "fallback_used": fallback_used,
+        }
+        try:
+            self.transcript_recorder.record_turn(event)
+        except OSError:
+            return
+
 
 def _default_backend_fallback() -> bool:
     return not (_env_flag("VELVET_CONTEST_MODE") or bool(os.getenv("SPACE_ID", "").strip()))
+
+
+def _turn_number(state: GameState) -> int:
+    return sum(1 for turn in state.history if turn.role == "user") + 1
+
+
+def _state_payload(state: GameState) -> dict[str, Any]:
+    return {
+        "mood": state.mood.value,
+        "status": state.status.value,
+        "scores": _score_payload(state.scores),
+        "used_tactics": sorted(state.used_tactics),
+        "hint": state.hint,
+    }
+
+
+def _model_turn_payload(model_turn: ModelTurn | None) -> dict[str, Any] | None:
+    if model_turn is None:
+        return None
+    return {
+        "reply": model_turn.reply,
+        "mood": model_turn.mood.value,
+        "score_delta": _score_payload(model_turn.score_delta),
+        "rationale": model_turn.rationale,
+        "tactic": model_turn.tactic,
+    }
+
+
+def _score_payload(scores: ScoreState) -> dict[str, int]:
+    return asdict(scores)
+
+
+def _score_delta_payload(before: ScoreState, after: ScoreState) -> dict[str, int]:
+    return {
+        "rapport": after.rapport - before.rapport,
+        "suspicion": after.suspicion - before.suspicion,
+        "patience": after.patience - before.patience,
+        "softspot_progress": after.softspot_progress - before.softspot_progress,
+    }
+
+
+def _validator_payload(
+    validator_read: ValidatorRead | None,
+    model_turn: ModelTurn | None,
+    state: GameState,
+    updated: GameState,
+) -> dict[str, Any] | None:
+    if validator_read is None or model_turn is None:
+        return None
+    return {
+        "model_tactic": model_turn.tactic,
+        "tactic": validator_read.tactic,
+        "tactic_agreement": model_turn.tactic == validator_read.tactic,
+        "repeated_tactic": validator_read.repeated_tactic,
+        "is_softspot_tactic": validator_read.is_softspot_tactic,
+        "bad_faith_tactic": validator_read.bad_faith_tactic,
+        "softspot_landed": updated.scores.softspot_progress > state.scores.softspot_progress,
+        "score_delta": _score_delta_payload(state.scores, updated.scores),
+        "mood": updated.mood.value,
+        "status": updated.status.value,
+        "hint": updated.hint,
+    }
+
+
+def _backend_summary(backend: ModelBackend) -> dict[str, Any]:
+    summary: dict[str, Any] = {"type": type(backend).__name__}
+    for name in ("base_url", "model", "timeout_seconds", "temperature", "max_tokens", "chat_format", "n_ctx", "n_threads"):
+        if hasattr(backend, name):
+            summary[name] = getattr(backend, name)
+    if hasattr(backend, "model_path"):
+        summary["model_path_configured"] = bool(str(getattr(backend, "model_path")).strip())
+    return summary
 
 
 def _env_flag(name: str) -> bool:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Protocol
@@ -46,6 +47,7 @@ class GameState:
     character_id: str
     scores: ScoreState
     mood: Mood
+    session_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     status: GameStatus = GameStatus.ACTIVE
     history: list[ChatTurn] = field(default_factory=list)
     used_tactics: set[str] = field(default_factory=set)

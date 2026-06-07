@@ -142,6 +142,26 @@ def test_repeating_same_softspot_does_not_add_progress():
     assert "same read twice" in repeated.hint
 
 
+def test_repeated_softspot_does_not_downgrade_softened_mood():
+    state = replace(
+        new_game_state(MARLOWE),
+        scores=ScoreState(rapport=29, suspicion=33, patience=64, softspot_progress=1),
+        mood=Mood.SOFTENED,
+        used_tactics={"line_logistics", "comfort_empathy"},
+    )
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "I bet you have quite the system for working that clipboard, don't you?",
+        model_turn(mood=Mood.RESPECTED, rapport=2, suspicion=-5, patience=2, softspot_progress=1, tactic="professional_validation"),
+    )
+
+    assert updated.mood is Mood.SOFTENED
+    assert updated.scores.softspot_progress == state.scores.softspot_progress
+    assert "same read twice" in updated.hint
+
+
 def test_two_distinct_softspots_can_win_when_rapport_is_healthy():
     state = replace(
         new_game_state(MARLOWE),
@@ -249,6 +269,23 @@ def test_bribery_makes_marlowe_suspicious_without_softspot_progress():
     assert updated.scores.softspot_progress == 0
     assert "transactions" in updated.hint
     assert "bribery" in updated.used_tactics
+
+
+def test_slip_you_a_hundred_is_bribery_even_when_line_is_mentioned():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "How about I slip you a hundred and I don't have to worry about this funny line?",
+        model_turn(mood=Mood.SUSPICIOUS, rapport=0, suspicion=10, patience=-10, softspot_progress=0, tactic="hard_line"),
+    )
+
+    assert updated.mood is Mood.SUSPICIOUS
+    assert updated.scores.suspicion > state.scores.suspicion
+    assert updated.scores.softspot_progress == 0
+    assert "bribery" in updated.used_tactics
+    assert "line_logistics" not in updated.used_tactics
 
 
 def test_entitlement_costs_patience_and_rapport():
@@ -389,6 +426,95 @@ def test_comfort_empathy_counts_as_distinct_softspot():
     assert "comfort_empathy" in updated.used_tactics
 
 
+def test_footwear_and_concrete_count_as_comfort_empathy():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "Standing on concrete for nine hours means you must need serious footware.",
+        model_turn(mood=Mood.SOFTENED, rapport=2, suspicion=-5, patience=5, softspot_progress=1, tactic="acknowledge_utility"),
+    )
+
+    assert updated.mood in {Mood.RESPECTED, Mood.SOFTENED}
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.softspot_progress == 1
+    assert "comfort_empathy" in updated.used_tactics
+
+
+def test_spending_money_on_quality_shoes_is_not_bribery():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "Standing for that long, you must spend some good money on quality shoes.",
+        model_turn(mood=Mood.SOFTENED, rapport=2, suspicion=-2, patience=1, softspot_progress=1, tactic="shared_professional_misery"),
+    )
+
+    assert updated.mood in {Mood.RESPECTED, Mood.SOFTENED}
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "comfort_empathy" in updated.used_tactics
+    assert "bribery" not in updated.used_tactics
+
+
+def test_softened_marlowe_can_let_player_in_after_second_distinct_read_even_if_model_says_respected():
+    state = replace(
+        new_game_state(MARLOWE),
+        scores=ScoreState(rapport=37, suspicion=26, patience=73, softspot_progress=1),
+        mood=Mood.SOFTENED,
+        used_tactics={"comfort_empathy"},
+    )
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "The fire marshal must appreciate how you keep the exits clear.",
+        model_turn(mood=Mood.RESPECTED, rapport=5, suspicion=0, patience=2, softspot_progress=1, tactic="professional_validation"),
+    )
+
+    assert updated.status is GameStatus.WON
+    assert updated.mood is Mood.LETTING_YOU_IN
+    assert "crowd_safety" in updated.used_tactics
+
+
+def test_level_one_win_threshold_is_forty_rapport():
+    assert MARLOWE.win_rapport == 40
+
+
+def test_keep_the_peace_counts_as_crowd_safety_softspot():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "Keeping the peace and people happy is just as important as kicking out the obnoxious folks.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-1, softspot_progress=0),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.softspot_progress == 1
+    assert "crowd_safety" in updated.used_tactics
+
+
+def test_fire_marshal_exits_and_occupancy_count_as_crowd_safety_softspot():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "Keeping the exits clear and occupancy honest must keep the fire marshal off your back.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-1, softspot_progress=0),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.softspot_progress == 1
+    assert "crowd_safety" in updated.used_tactics
+
+
 def test_win_requires_scores_and_winning_mood():
     state = new_game_state(MARLOWE)
     strong_state = state.__class__(
@@ -414,11 +540,11 @@ def test_win_requires_scores_and_winning_mood():
     assert result.mood is Mood.LETTING_YOU_IN
 
 
-def test_first_level_wins_at_fifty_rapport():
+def test_first_level_wins_at_forty_rapport():
     state = new_game_state(MARLOWE)
     strong_state = state.__class__(
         character_id=state.character_id,
-        scores=ScoreState(rapport=49, suspicion=20, patience=80, softspot_progress=3),
+        scores=ScoreState(rapport=39, suspicion=20, patience=80, softspot_progress=3),
         mood=Mood.SOFTENED,
         status=GameStatus.ACTIVE,
         history=state.history,
@@ -435,7 +561,7 @@ def test_first_level_wins_at_fifty_rapport():
 
     result = validate_turn(MARLOWE, strong_state, "I will be one less problem outside the rope.", turn)
 
-    assert result.scores.rapport == 50
+    assert result.scores.rapport == 40
     assert result.status is GameStatus.WON
     assert result.mood is Mood.LETTING_YOU_IN
 
@@ -444,7 +570,7 @@ def test_letting_you_in_closes_last_few_rapport_points_after_softening():
     state = new_game_state(MARLOWE)
     softened_state = state.__class__(
         character_id=state.character_id,
-        scores=ScoreState(rapport=46, suspicion=19, patience=83, softspot_progress=3),
+        scores=ScoreState(rapport=36, suspicion=19, patience=83, softspot_progress=3),
         mood=Mood.SOFTENED,
         status=GameStatus.ACTIVE,
         history=state.history,
@@ -466,7 +592,7 @@ def test_letting_you_in_closes_last_few_rapport_points_after_softening():
         turn,
     )
 
-    assert result.scores.rapport == 50
+    assert result.scores.rapport == 40
     assert result.status is GameStatus.WON
     assert result.mood is Mood.LETTING_YOU_IN
 

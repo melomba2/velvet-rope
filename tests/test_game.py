@@ -1,8 +1,10 @@
+import json
 from dataclasses import replace
 
 from velvet_rope.model_backends import DeterministicMarloweBackend
 from velvet_rope.game import GameService
 from velvet_rope.state import GameStatus, Mood
+from velvet_rope.transcripts import JsonlTranscriptRecorder
 
 
 class FalsyBackend:
@@ -84,6 +86,15 @@ class PromptCaptureBackend:
             '{"reply": "No.", "mood": "unimpressed", '
             '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
             '"rationale": "Generic refusal.", "tactic": "generic"}'
+        )
+
+
+class FireMarshalProfessionalBackend:
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        return (
+            '{"reply": "The fire marshal appreciates a boringly clear exit.", "mood": "respected", '
+            '"score_delta": {"rapport": 5, "suspicion": 0, "patience": 2, "softspot_progress": 1}, '
+            '"rationale": "Player recognized operational safety.", "tactic": "professional_validation"}'
         )
 
 
@@ -321,3 +332,70 @@ def test_two_distinct_softspot_reads_win_game_with_deterministic_backend():
     assert state.status is GameStatus.WON
     assert state.mood is Mood.LETTING_YOU_IN
     assert "rope" in state.history[-1].content.lower()
+
+
+def test_game_service_writes_playtest_transcript_jsonl(tmp_path):
+    recorder = JsonlTranscriptRecorder(tmp_path)
+    service = GameService(backend=DeterministicMarloweBackend(), transcript_recorder=recorder)
+    state = service.new_game()
+
+    updated = service.play_turn(state, "Your line logistics are impressive.")
+
+    transcript_path = tmp_path / f"{state.session_id}.jsonl"
+    event = json.loads(transcript_path.read_text().strip())
+    assert event["schema_version"] == 1
+    assert event["session_id"] == state.session_id
+    assert event["turn_number"] == 1
+    assert event["backend"]["type"] == "DeterministicMarloweBackend"
+    assert "api_key" not in json.dumps(event)
+    assert event["player_message"] == "Your line logistics are impressive."
+    assert event["raw_model_output"]
+    assert event["parsed_model_turn"]["tactic"] == "line_logistics"
+    assert event["validator"]["tactic"] == "line_logistics"
+    assert event["validator"]["model_tactic"] == "line_logistics"
+    assert event["validator"]["tactic_agreement"] is True
+    assert event["validator"]["is_softspot_tactic"] is True
+    assert event["validator"]["softspot_landed"] is True
+    assert event["validator"]["score_delta"]["softspot_progress"] == 1
+    assert event["state_before"]["mood"] == "unimpressed"
+    assert event["state_after"]["mood"] == "respected"
+    assert event["state_after"]["scores"]["softspot_progress"] == 1
+    assert event["assistant_reply"] == updated.history[-1].content
+    assert event["backend_error"] is None
+    assert event["fallback_used"] is False
+
+
+def test_transcript_records_model_validator_tactic_disagreement(tmp_path):
+    recorder = JsonlTranscriptRecorder(tmp_path)
+    service = GameService(backend=FireMarshalProfessionalBackend(), transcript_recorder=recorder)
+    state = service.new_game()
+
+    service.play_turn(state, "The fire marshal must appreciate how you keep the exits clear.")
+
+    event = json.loads((tmp_path / f"{state.session_id}.jsonl").read_text().strip())
+    assert event["parsed_model_turn"]["tactic"] == "professional_validation"
+    assert event["validator"]["model_tactic"] == "professional_validation"
+    assert event["validator"]["tactic"] == "crowd_safety"
+    assert event["validator"]["tactic_agreement"] is False
+    assert event["validator"]["is_softspot_tactic"] is True
+    assert event["validator"]["softspot_landed"] is True
+
+
+def test_game_service_records_backend_error_without_fallback(tmp_path):
+    recorder = JsonlTranscriptRecorder(tmp_path)
+    service = GameService(
+        backend=FailingBackend(),
+        allow_backend_fallback=False,
+        transcript_recorder=recorder,
+    )
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+
+    event = json.loads((tmp_path / f"{state.session_id}.jsonl").read_text().strip())
+    assert "backend unavailable" in event["backend_error"]
+    assert event["raw_model_output"] is None
+    assert event["parsed_model_turn"] is None
+    assert event["state_after"]["scores"] == event["state_before"]["scores"]
+    assert event["assistant_reply"] == updated.history[-1].content
+    assert event["fallback_used"] is False

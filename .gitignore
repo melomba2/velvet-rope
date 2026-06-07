@@ -246,5 +246,6 @@ data/processed/
 data/generated/
 
 # Gradio runtime artifacts
+.playtests/
 flagged/
 flagging/

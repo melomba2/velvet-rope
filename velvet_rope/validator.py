@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from dataclasses import replace
 import re
 
@@ -11,14 +12,39 @@ SOFTSPOT_TACTICS = frozenset({"line_logistics", "comfort_empathy", "tiny_disaste
 
 _TACTIC_KEYWORDS = (
     ("meta_gaming", ("system prompt", "ignore previous", "developer message", "hidden rule", "password", "jailbreak", "prompt injection", "reveal your instructions")),
-    ("bribery", ("bribe", "pay you", "cash", "money", "fifty bucks", "hundred bucks", "tip you", "venmo", "celebrity", "vip")),
+    ("bribery", ("bribe", "slip you", "pay you", "cash", "fifty bucks", "a hundred", "hundred bucks", "tip you", "venmo", "celebrity", "vip")),
     ("entitlement", ("do you know who i am", "move aside", "let me in now", "i belong inside", "i am on the list", "you have to let me in", "i demand", "demand entry", "idiot")),
-    ("comfort_empathy", ("comfortable shoes", "shoes", "feet", "standing all night", "break", "fatigue", "tired", "weather")),
-    ("tiny_disasters", ("tiny disasters", "preventing disasters")),
-    ("crowd_safety", ("crowd", "safety", "door work")),
+    ("comfort_empathy", ("comfortable shoes", "shoes", "feet", "footwear", "footware", "orthotics", "concrete", "standing all night", "standing on concrete", "break", "fatigue", "tired", "weather")),
+    ("tiny_disasters", ("tiny disasters", "preventing disasters", "small civic emergency", "medical emergency", "brawl", "shutdown")),
+    ("crowd_safety", ("crowd", "safety", "door work", "keep the peace", "keeping the peace", "people happy", "obnoxious folks", "fire marshal", "exits clear", "occupancy", "de-escalate", "deescalate", "managed expectations", "clear exits")),
     ("line_logistics", ("line", "queue", "logistics", "clipboard")),
     ("generic_charm", ("please", "compliment", "compliments", "nice", "cool", "handsome", "best bouncer", "clearly the best", "you are the best", "you're the best", "great bouncer")),
 )
+
+
+@dataclass(frozen=True)
+class ValidatorRead:
+    tactic: str
+    repeated_tactic: bool
+    is_softspot_tactic: bool
+    bad_faith_tactic: bool
+
+
+def read_validator_turn(
+    character: Character,
+    state: GameState,
+    player_message: str,
+    model_turn: ModelTurn,
+) -> ValidatorRead:
+    tactic = _normalized_tactic(player_message, model_turn.tactic)
+    if _contains_any(player_message, character.meta_keywords):
+        tactic = "meta_gaming"
+    return ValidatorRead(
+        tactic=tactic,
+        repeated_tactic=tactic in state.used_tactics,
+        is_softspot_tactic=tactic in SOFTSPOT_TACTICS,
+        bad_faith_tactic=tactic in {"meta_gaming", "bribery", "entitlement"},
+    )
 
 
 def validate_turn(
@@ -30,16 +56,17 @@ def validate_turn(
     if state.status is not GameStatus.ACTIVE:
         return state
 
-    tactic = _normalized_tactic(player_message, model_turn.tactic)
-    bad_faith_tactic = tactic in {"meta_gaming", "bribery", "entitlement"}
+    validator_read = read_validator_turn(character, state, player_message, model_turn)
+    tactic = validator_read.tactic
+    bad_faith_tactic = validator_read.bad_faith_tactic
     if _contains_any(player_message, character.meta_keywords):
         return _apply_meta_penalty(character, state)
     if bad_faith_tactic:
         return _apply_bad_faith_penalty(character, state, tactic)
 
-    repeated_tactic = tactic in state.used_tactics
+    repeated_tactic = validator_read.repeated_tactic
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
-    is_softspot_tactic = tactic in SOFTSPOT_TACTICS
+    is_softspot_tactic = validator_read.is_softspot_tactic
     proposed_mood = Mood.UNIMPRESSED if tactic == "generic_charm" else model_turn.mood
     proposed_winning_mood = proposed_mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
     delta = _clamp_delta(model_turn.score_delta, is_softspot_tactic, repeated_tactic, proposed_mood, tactic)
@@ -53,7 +80,14 @@ def validate_turn(
         and next_mood is Mood.UNIMPRESSED
     ):
         next_mood = Mood.RESPECTED
-    next_status = _choose_status(character, next_scores, proposed_winning_mood)
+    if state.mood is Mood.SOFTENED and next_mood in {Mood.UNIMPRESSED, Mood.AMUSED, Mood.RESPECTED}:
+        next_mood = Mood.SOFTENED
+    validator_winning_mood = proposed_winning_mood or (
+        state.mood is Mood.SOFTENED
+        and is_softspot_tactic
+        and not repeated_tactic
+    )
+    next_status = _choose_status(character, next_scores, validator_winning_mood)
 
     if next_status is GameStatus.WON:
         next_mood = Mood.LETTING_YOU_IN

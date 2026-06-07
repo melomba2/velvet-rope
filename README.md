@@ -46,6 +46,12 @@ export VELVET_MODEL_BACKEND=deterministic
 python app.py
 ```
 
+### Playtest transcripts
+
+Running `python app.py` captures one JSONL transcript file per play session in `.playtests/transcripts/`.
+The folder is git-ignored. Set `VELVET_CAPTURE_TRANSCRIPTS=0` to disable capture, or set
+`VELVET_TRANSCRIPT_DIR=/path/to/transcripts` to write somewhere else.
+
 ### External OpenAI-compatible endpoint
 
 Use this for hosted llama.cpp, Modal, vLLM, Hugging Face Inference Endpoints, or any other OpenAI-compatible chat-completions server:
