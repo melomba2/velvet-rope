@@ -1,0 +1,421 @@
+{
+  "character_id": "marlowe",
+  "source_fixture": "validator_playtest_lines.json",
+  "purpose": "Behavior expectations for selected playtest lines through validate_turn.",
+  "notes": [
+    "case_id values reference lines in validator_playtest_lines.json.",
+    "score expectations are exact for the fields listed.",
+    "Multi-turn scenarios run against the same game state in turn order."
+  ],
+  "scenarios": [
+    {
+      "id": "bribery_cash_penalty",
+      "turns": [
+        {
+          "case_id": "bribery_cash_for_entry",
+          "model_mood": "amused",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "suspicious",
+            "scores": {"rapport": 18, "suspicion": 50, "patience": 64, "softspot_progress": 0},
+            "used_tactics_include": ["bribery"],
+            "used_tactics_exclude": ["line_logistics"],
+            "hint_contains": "transactions"
+          }
+        }
+      ]
+    },
+    {
+      "id": "vip_keyword_currently_behaves_like_bribery",
+      "turns": [
+        {
+          "case_id": "vip_priority_probe",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "suspicious",
+            "scores": {"rapport": 18, "suspicion": 50, "patience": 64, "softspot_progress": 0},
+            "used_tactics_include": ["bribery"],
+            "used_tactics_exclude": ["line_logistics"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "innocent_money_about_shoes_rewards_comfort",
+      "turns": [
+        {
+          "case_id": "innocent_money_quality_shoes",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 2, "suspicion": 0, "patience": -1, "softspot_progress": 0},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["comfort_empathy"],
+            "used_tactics_exclude": ["bribery"],
+            "hint_contains": "noticed you noticed"
+          }
+        }
+      ]
+    },
+    {
+      "id": "paid_cover_waiting_still_rewards_line_logistics",
+      "turns": [
+        {
+          "case_id": "innocent_money_cover_charge",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 3, "suspicion": 0, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["line_logistics"],
+            "used_tactics_exclude": ["bribery", "entitlement"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tip_as_advice_prioritizes_crowd_safety",
+      "turns": [
+        {
+          "case_id": "innocent_tip_as_advice",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 2, "suspicion": 0, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["crowd_safety"],
+            "used_tactics_exclude": ["bribery", "line_logistics"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "explicit_entitlement_penalty",
+      "turns": [
+        {
+          "case_id": "entitlement_explicit_demand",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "suspicious",
+            "scores": {"rapport": 14, "suspicion": 47, "patience": 60, "softspot_progress": 0},
+            "used_tactics_include": ["entitlement"],
+            "used_tactics_exclude": ["line_logistics"],
+            "hint_contains": "Entitlement"
+          }
+        }
+      ]
+    },
+    {
+      "id": "you_have_to_be_tired_is_empathy",
+      "turns": [
+        {
+          "case_id": "entitlement_false_positive_tired",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 2, "suspicion": 0, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["comfort_empathy"],
+            "used_tactics_exclude": ["entitlement"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "meta_attempt_overrides_softspot_and_keeps_used_tactics_empty",
+      "turns": [
+        {
+          "case_id": "overlap_meta_softspot",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "suspicious",
+            "scores": {"rapport": 20, "suspicion": 55, "patience": 60, "softspot_progress": 0},
+            "used_tactics_exclude": ["meta_gaming", "tiny_disasters"],
+            "hint_contains": "rules-lawyer"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bad_faith_money_beats_line_softspot",
+      "turns": [
+        {
+          "case_id": "overlap_bribe_line",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "suspicious",
+            "scores": {"rapport": 18, "suspicion": 50, "patience": 64, "softspot_progress": 0},
+            "used_tactics_include": ["bribery"],
+            "used_tactics_exclude": ["line_logistics"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fire_marshal_line_rewards_crowd_safety",
+      "turns": [
+        {
+          "case_id": "crowd_fire_marshal",
+          "model_mood": "unimpressed",
+          "score_delta": {"rapport": 1, "suspicion": 0, "patience": -1, "softspot_progress": 0},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["crowd_safety"],
+            "hint_contains": "noticed you noticed"
+          }
+        }
+      ]
+    },
+    {
+      "id": "medical_emergency_rewards_tiny_disasters",
+      "turns": [
+        {
+          "case_id": "tiny_disasters_medical",
+          "model_mood": "unimpressed",
+          "score_delta": {"rapport": 1, "suspicion": 0, "patience": -1, "softspot_progress": 0},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["tiny_disasters"],
+            "hint_contains": "noticed you noticed"
+          }
+        }
+      ]
+    },
+    {
+      "id": "generic_request_is_clamped",
+      "turns": [
+        {
+          "case_id": "entitlement_false_positive_let_me_in_later",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "unimpressed",
+            "scores": {"rapport": 21, "suspicion": 35, "patience": 68, "softspot_progress": 0},
+            "used_tactics_include": ["generic_charm"],
+            "used_tactics_exclude": ["entitlement"],
+            "hint_contains": "compliments"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeating_line_logistics_stops_progress_farming",
+      "turns": [
+        {
+          "case_id": "line_repeat_first",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 32, "suspicion": 30, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["line_logistics"]
+          }
+        },
+        {
+          "case_id": "line_repeat_second_queue_synonym",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 33, "suspicion": 30, "patience": 67, "softspot_progress": 1},
+            "used_tactics_include": ["line_logistics"],
+            "hint_contains": "same read twice"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeating_comfort_empathy_stops_progress_farming",
+      "turns": [
+        {
+          "case_id": "comfort_repeat_first",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 32, "suspicion": 30, "patience": 69, "softspot_progress": 1},
+            "used_tactics_include": ["comfort_empathy"]
+          }
+        },
+        {
+          "case_id": "comfort_repeat_second_orthotics",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "respected",
+            "scores": {"rapport": 33, "suspicion": 30, "patience": 67, "softspot_progress": 1},
+            "used_tactics_include": ["comfort_empathy"],
+            "hint_contains": "same read twice"
+          }
+        }
+      ]
+    },
+    {
+      "id": "distinct_softspot_after_softening_can_win_even_if_model_says_respected",
+      "initial_state": {
+        "scores": {"rapport": 39, "suspicion": 30, "patience": 60, "softspot_progress": 1},
+        "mood": "softened",
+        "used_tactics": ["line_logistics"]
+      },
+      "turns": [
+        {
+          "case_id": "distinct_softspot_after_repeat",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 5, "suspicion": 0, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "won",
+            "mood": "letting_you_in",
+            "scores": {"rapport": 45, "suspicion": 28, "patience": 62, "softspot_progress": 2},
+            "used_tactics_include": ["line_logistics", "crowd_safety"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "exact_rapport_threshold_can_win",
+      "initial_state": {
+        "scores": {"rapport": 39, "suspicion": 20, "patience": 80, "softspot_progress": 3},
+        "mood": "softened"
+      },
+      "turns": [
+        {
+          "case_id": "win_edge_exact_rapport_request",
+          "model_tactic": "professional_alignment",
+          "model_mood": "softened",
+          "score_delta": {"rapport": 1, "suspicion": 0, "patience": -1, "softspot_progress": 0},
+          "expect": {
+            "status": "won",
+            "mood": "letting_you_in",
+            "scores": {"rapport": 40, "suspicion": 20, "patience": 79, "softspot_progress": 3},
+            "used_tactics_include": ["professional_alignment"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "letting_you_in_closes_last_few_rapport_points",
+      "initial_state": {
+        "scores": {"rapport": 36, "suspicion": 19, "patience": 83, "softspot_progress": 3},
+        "mood": "softened",
+        "used_tactics": ["professional_validation"]
+      },
+      "turns": [
+        {
+          "case_id": "win_edge_close_endgame",
+          "model_tactic": "professional_validation",
+          "model_mood": "letting_you_in",
+          "score_delta": {"rapport": 1, "suspicion": -5, "patience": 5, "softspot_progress": 0},
+          "expect": {
+            "status": "won",
+            "mood": "letting_you_in",
+            "scores": {"rapport": 40, "suspicion": 19, "patience": 81, "softspot_progress": 3},
+            "used_tactics_include": ["professional_validation"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "scores_without_winning_mood_do_not_immediately_win",
+      "initial_state": {
+        "scores": {"rapport": 74, "suspicion": 40, "patience": 30, "softspot_progress": 1},
+        "mood": "respected"
+      },
+      "turns": [
+        {
+          "case_id": "win_edge_scores_without_winning_mood",
+          "model_mood": "suspicious",
+          "score_delta": {"rapport": 5, "suspicion": -2, "patience": -1, "softspot_progress": 1},
+          "expect": {
+            "status": "active",
+            "mood": "softened",
+            "scores": {"rapport": 79, "suspicion": 38, "patience": 29, "softspot_progress": 2},
+            "used_tactics_include": ["comfort_empathy"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generic_patience_zero_loses",
+      "initial_state": {
+        "scores": {"rapport": 20, "suspicion": 35, "patience": 2, "softspot_progress": 0},
+        "mood": "unimpressed"
+      },
+      "turns": [
+        {
+          "case_id": "loss_edge_patience_zero_generic",
+          "model_mood": "unimpressed",
+          "score_delta": {"rapport": 0, "suspicion": 0, "patience": -10, "softspot_progress": 0},
+          "expect": {
+            "status": "lost",
+            "mood": "done_with_you",
+            "scores": {"rapport": 21, "suspicion": 35, "patience": 0, "softspot_progress": 0},
+            "used_tactics_include": ["generic_charm"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "entitlement_low_patience_loses",
+      "initial_state": {
+        "scores": {"rapport": 20, "suspicion": 35, "patience": 10, "softspot_progress": 0},
+        "mood": "unimpressed"
+      },
+      "turns": [
+        {
+          "case_id": "loss_edge_entitlement_low_patience",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "lost",
+            "mood": "done_with_you",
+            "scores": {"rapport": 14, "suspicion": 47, "patience": 0, "softspot_progress": 0},
+            "used_tactics_include": ["entitlement"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "meta_low_patience_loses",
+      "initial_state": {
+        "scores": {"rapport": 20, "suspicion": 35, "patience": 10, "softspot_progress": 0},
+        "mood": "unimpressed"
+      },
+      "turns": [
+        {
+          "case_id": "loss_edge_meta_low_patience",
+          "model_mood": "respected",
+          "score_delta": {"rapport": 12, "suspicion": -5, "patience": 2, "softspot_progress": 1},
+          "expect": {
+            "status": "lost",
+            "mood": "done_with_you",
+            "scores": {"rapport": 20, "suspicion": 55, "patience": 0, "softspot_progress": 0},
+            "used_tactics_exclude": ["meta_gaming"],
+            "hint_contains": "rules-lawyer"
+          }
+        }
+      ]
+    }
+  ]
+}

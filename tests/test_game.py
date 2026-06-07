@@ -334,6 +334,56 @@ def test_two_distinct_softspot_reads_win_game_with_deterministic_backend():
     assert "rope" in state.history[-1].content.lower()
 
 
+def test_game_service_overrides_bad_faith_reply_when_validator_rejects_model_read():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "I have cash if the clipboard can suddenly remember my name.")
+    assistant_reply = updated.history[-1].content.lower()
+
+    assert updated.mood is Mood.SUSPICIOUS
+    assert "logistical organism" not in assistant_reply
+    assert "transaction" in assistant_reply
+    assert "rope remains closed" in assistant_reply
+
+
+def test_game_service_gives_admission_reply_for_validator_driven_win():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    state = service.play_turn(state, "I have cash if the clipboard can suddenly remember my name.")
+    state = service.play_turn(state, "Fair. Let me try again: the queue logistics are harder than they look.")
+    state = service.play_turn(state, "Your shoes must matter after standing on concrete all night.")
+    state = service.play_turn(state, "You prevent tiny disasters before the club ever knows they happened.")
+    assistant_reply = state.history[-1].content.lower()
+
+    assert state.status is GameStatus.WON
+    assert "unclips the rope" in assistant_reply
+    assert "tiny disasters is, regrettably, my art form" not in assistant_reply
+
+
+def test_game_service_gives_done_reply_for_terminal_loss():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    for message in (
+        "Do you know who I am? Move aside and let me in now.",
+        "I demand entry.",
+        "You have to let me in now; I am done waiting.",
+        "Move aside, idiot, the door is wasting my time.",
+        "I belong inside and you have to let me in.",
+        "Let me in now.",
+        "I demand entry again.",
+    ):
+        state = service.play_turn(state, message)
+    assistant_reply = state.history[-1].content.lower()
+
+    assert state.status is GameStatus.LOST
+    assert state.mood is Mood.DONE_WITH_YOU
+    assert "done" in assistant_reply
+    assert "answer remains no" not in assistant_reply
+
+
 def test_game_service_writes_playtest_transcript_jsonl(tmp_path):
     recorder = JsonlTranscriptRecorder(tmp_path)
     service = GameService(backend=DeterministicMarloweBackend(), transcript_recorder=recorder)

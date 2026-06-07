@@ -74,7 +74,7 @@ def validate_turn(
     next_scores = _apply_delta(state.scores, delta)
     next_mood = _choose_mood(character, next_scores, proposed_mood)
     if (
-        touches_softspot
+        (touches_softspot or is_softspot_tactic)
         and not repeated_tactic
         and next_scores.softspot_progress > state.scores.softspot_progress
         and next_mood is Mood.UNIMPRESSED

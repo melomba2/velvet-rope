@@ -91,7 +91,7 @@ class GameService:
         model_turn = parse_model_turn(raw_output)
         validator_read = read_validator_turn(self.character, state, player_message, model_turn)
         validated = validate_turn(self.character, state, player_message, model_turn)
-        assistant_reply = self._assistant_reply(player_message, validated, model_turn.reply)
+        assistant_reply = self._assistant_reply(player_message, validated, model_turn.reply, validator_read)
         updated = replace(
             validated,
             history=[
@@ -133,10 +133,49 @@ class GameService:
     def _safe_reply(self) -> str:
         return f"{self.character.display_name} taps the clipboard. Nice try. The rope remains where it is."
 
-    def _assistant_reply(self, player_message: str, state: GameState, reply: str) -> str:
+    def _win_reply(self) -> str:
+        return (
+            f"{self.character.display_name} exhales, unclips the rope, and mutters, "
+            "'Fine. Anyone who notices the labor may briefly enjoy bass.'"
+        )
+
+    def _done_reply(self) -> str:
+        return (
+            f"{self.character.display_name} closes the clipboard. "
+            "Done. The rope remains closed, and so does this conversation."
+        )
+
+    def _bad_faith_reply(self, tactic: str) -> str:
+        if tactic == "bribery":
+            return (
+                f"{self.character.display_name} looks at the offer like it tracked mud across the carpet. "
+                "Transactions make the rope heavier. The rope remains closed."
+            )
+        if tactic == "entitlement":
+            return (
+                f"{self.character.display_name}'s expression shuts like a fire door. "
+                "Demanding the room only moves the room farther away."
+            )
+        return self._safe_reply()
+
+    def _assistant_reply(
+        self,
+        player_message: str,
+        state: GameState,
+        reply: str,
+        validator_read: ValidatorRead,
+    ) -> str:
+        if state.status is GameStatus.LOST:
+            return self._done_reply()
         if self._is_meta_attempt(player_message):
             return self._safe_reply()
+        if validator_read.bad_faith_tactic:
+            return self._bad_faith_reply(validator_read.tactic)
         redacted = self._redact_reply(reply)
+        if state.status is GameStatus.WON:
+            if _implies_admission(redacted):
+                return redacted
+            return self._win_reply()
         if state.status is not GameStatus.WON and _implies_admission(redacted):
             return f"{self.character.display_name} catches the rope before it moves. Close, but the rope remains closed for now."
         return redacted
