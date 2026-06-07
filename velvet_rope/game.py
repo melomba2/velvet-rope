@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import os
 import re
 
 from velvet_rope.characters import Character, MARLOWE
@@ -28,9 +29,15 @@ Do not say the player enters, crosses the threshold, gets inside, or is let in u
 
 
 class GameService:
-    def __init__(self, backend: ModelBackend | None = None, character: Character = MARLOWE) -> None:
+    def __init__(
+        self,
+        backend: ModelBackend | None = None,
+        character: Character = MARLOWE,
+        allow_backend_fallback: bool | None = None,
+    ) -> None:
         self.backend = backend if backend is not None else backend_from_env()
         self.character = character
+        self.allow_backend_fallback = _default_backend_fallback() if allow_backend_fallback is None else allow_backend_fallback
 
     def new_game(self) -> GameState:
         return new_game_state(self.character)
@@ -47,6 +54,15 @@ class GameService:
                 player_message=player_message,
             )
         except Exception:
+            if not self.allow_backend_fallback:
+                return replace(
+                    state,
+                    history=[
+                        *state.history,
+                        ChatTurn(role="user", content=player_message),
+                        ChatTurn(role="assistant", content=self._backend_unavailable_reply()),
+                    ],
+                )
             raw_output = self._fallback_output()
         model_turn = parse_model_turn(raw_output)
         validated = validate_turn(self.character, state, player_message, model_turn)
@@ -98,10 +114,24 @@ class GameService:
             '"tactic": "backend_failure"}'
         )
 
+    def _backend_unavailable_reply(self) -> str:
+        return (
+            f"{self.character.display_name}'s earpiece crackles. "
+            "The model is unavailable, so the rope will not pretend this was a real read. Try again in a moment."
+        )
+
     def _redact_reply(self, reply: str) -> str:
         redacted = _HIDDEN_STATE_PATTERN.sub("hidden state", reply)
         redacted = re.sub(r"\bsoftspot progress\b", "hidden state", redacted, flags=re.IGNORECASE)
         return redacted
+
+
+def _default_backend_fallback() -> bool:
+    return not (_env_flag("VELVET_CONTEST_MODE") or bool(os.getenv("SPACE_ID", "").strip()))
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _contains_keyword(lowered_text: str, keyword: str) -> bool:

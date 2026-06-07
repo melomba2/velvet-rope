@@ -245,6 +245,30 @@ def test_game_service_falls_back_when_backend_fails():
     assert updated.scores.patience == 69
 
 
+def test_game_service_reports_backend_failure_without_scoring_when_fallback_disabled():
+    service = GameService(backend=FailingBackend(), allow_backend_fallback=False)
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+
+    assert updated.history[-2].content == "hello"
+    assert "model is unavailable" in updated.history[-1].content.lower()
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.scores == state.scores
+    assert updated.mood is state.mood
+
+
+def test_game_service_disables_backend_fallback_by_default_in_contest_mode(monkeypatch):
+    monkeypatch.setenv("VELVET_CONTEST_MODE", "1")
+    service = GameService(backend=FailingBackend())
+    state = service.new_game()
+
+    updated = service.play_turn(state, "hello")
+
+    assert "model is unavailable" in updated.history[-1].content.lower()
+    assert updated.scores == state.scores
+
+
 def test_game_service_does_not_advance_terminal_states():
     backend = CountingBackend()
     service = GameService(backend=backend)

@@ -24,6 +24,7 @@ The default backend is deterministic so local development remains demoable while
 Recommended starting point for the Build Small Hackathon deployment. This keeps Velvet Rope as a normal Gradio Space while using Hugging Face infrastructure and credits for real Gemma inference. HF Router currently exposes Gemma 4 26B A4B as a chat model; it stays under the contest's 32B total-parameter cap and is the working Router default while Gemma 4 12B remains the local/llama.cpp target.
 
 ```bash
+export VELVET_CONTEST_MODE=1
 export VELVET_MODEL_BACKEND=huggingface-router
 export HF_TOKEN=...
 export VELVET_MODEL_NAME=google/gemma-4-26B-A4B-it
@@ -33,6 +34,8 @@ python app.py
 ```
 
 You can also set `VELVET_OPENAI_API_KEY` instead of `HF_TOKEN`. If both are present, `VELVET_OPENAI_API_KEY` wins. The HF Router backend defaults to `https://router.huggingface.co/v1`, but `VELVET_OPENAI_BASE_URL` can override it for testing.
+
+`VELVET_CONTEST_MODE=1` disables the deterministic backend and prevents silent deterministic fallback when model calls fail. In contest mode, a model outage is shown as an unavailable-model message instead of pretending the AI completed the turn.
 
 ### Deterministic fallback
 

@@ -262,7 +262,16 @@ def backend_from_env() -> ModelBackend:
             n_ctx=_env_int("VELVET_LLAMA_CPP_N_CTX", 4096),
             n_threads=_env_int("VELVET_LLAMA_CPP_N_THREADS", 0),
         )
+    if _contest_runtime_enabled():
+        raise RuntimeError(
+            "The deterministic backend is disabled in contest runtime. "
+            "Set VELVET_MODEL_BACKEND=huggingface-router or another real model backend."
+        )
     return DeterministicMarloweBackend()
+
+
+def _contest_runtime_enabled() -> bool:
+    return _env_flag("VELVET_CONTEST_MODE") or bool(os.getenv("SPACE_ID", "").strip())
 
 
 def _chat_messages(
@@ -292,6 +301,10 @@ def _env_float(name: str, default: float) -> float:
         return float(os.getenv(name, str(default)))
     except ValueError:
         return default
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _first_env(*names: str) -> str:

@@ -122,6 +122,23 @@ def test_backend_from_env_reads_huggingface_router_defaults(monkeypatch):
     assert backend.api_key == "hf-secret-token"
 
 
+def test_backend_from_env_rejects_deterministic_in_contest_mode(monkeypatch):
+    monkeypatch.setenv("VELVET_CONTEST_MODE", "1")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+
+    with pytest.raises(RuntimeError, match="deterministic backend is disabled"):
+        backend_from_env()
+
+
+def test_backend_from_env_rejects_deterministic_on_huggingface_space(monkeypatch):
+    monkeypatch.setenv("SPACE_ID", "build-small-hackathon/velvet-rope")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+    monkeypatch.delenv("VELVET_CONTEST_MODE", raising=False)
+
+    with pytest.raises(RuntimeError, match="deterministic backend is disabled"):
+        backend_from_env()
+
+
 class FakeLlama:
     calls = []
 
