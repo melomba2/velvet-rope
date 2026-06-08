@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "source_workbench": "art/comfyui/",
+  "runtime_root": "velvet_rope/static/art/",
+  "notes": [
+    "The art/comfyui workbench is intentionally gitignored.",
+    "Only assets listed here should be referenced by the app or uploaded to Hugging Face Spaces.",
+    "Sprite images are transparent PNGs intended for pixel-art rendering with nearest-neighbor scaling."
+  ],
+  "marlowe_sprites": {
+    "unimpressed": "sprites/marlowe_unimpressed.png",
+    "suspicious": "sprites/marlowe_suspicious.png",
+    "amused": "sprites/marlowe_amused.png",
+    "respected": "sprites/marlowe_respected.png",
+    "softened": "sprites/marlowe_softened.png",
+    "letting_you_in": "sprites/marlowe_letting_you_in.png",
+    "done_with_you": "sprites/marlowe_done_with_you.png"
+  },
+  "scene_assets": {
+    "door_background": "assets/door_bg.png",
+    "win_background": "assets/state_win_bg.png",
+    "loss_background": "assets/state_loss_bg.png"
+  },
+  "rope_assets": {
+    "closed": "assets/rope_closed.png",
+    "tension": "assets/rope_tension.png",
+    "open": "assets/rope_open.png",
+    "open_animation": "assets/rope_open_anim.gif"
+  },
+  "ui_assets": {
+    "speech_bubble": "assets/speech_bubble.png",
+    "mood_badge": "assets/mood_badge.png",
+    "button": "assets/ui_button.png",
+    "stamp_admitted": "assets/stamp_admitted.png",
+    "stamp_denied": "assets/stamp_denied.png"
+  },
+  "icons": {
+    "clipboard": "assets/icon_clipboard.png",
+    "door": "assets/icon_door.png",
+    "lock": "assets/icon_lock.png",
+    "rope": "assets/icon_rope.png",
+    "shoe": "assets/icon_shoe.png",
+    "warning": "assets/icon_warning.png"
+  }
+}

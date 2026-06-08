@@ -223,6 +223,9 @@ __marimo__/
 Velvet Rope Readme.md
 velvet-rope-brief.md
 
+# Local art workbench / generated source assets
+/art/
+
 # macOS
 .DS_Store
 
