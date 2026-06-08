@@ -122,6 +122,64 @@ def test_backend_from_env_reads_huggingface_router_defaults(monkeypatch):
     assert backend.api_key == "hf-secret-token"
 
 
+def test_backend_from_env_reads_canonical_backend_name(monkeypatch):
+    monkeypatch.setenv("VELVET_BACKEND", "router")
+    monkeypatch.setenv("HF_TOKEN", "hf-secret-token")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+
+    backend = backend_from_env()
+
+    assert isinstance(backend, OpenAICompatibleBackend)
+    assert backend.base_url == "https://router.huggingface.co/v1"
+    assert backend.api_key == "hf-secret-token"
+
+
+def test_backend_from_env_normalizes_backend_name(monkeypatch):
+    monkeypatch.setenv("VELVET_BACKEND", " Router ")
+    monkeypatch.setenv("HF_TOKEN", "hf-secret-token")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+
+    backend = backend_from_env()
+
+    assert isinstance(backend, OpenAICompatibleBackend)
+
+
+def test_backend_from_env_lets_legacy_backend_name_override_canonical_name(monkeypatch):
+    monkeypatch.setenv("VELVET_BACKEND", "router")
+    monkeypatch.setenv("VELVET_MODEL_BACKEND", "deterministic")
+    monkeypatch.setenv("HF_TOKEN", "hf-secret-token")
+
+    backend = backend_from_env()
+
+    assert backend.__class__.__name__ == "DeterministicMarloweBackend"
+
+
+def test_huggingface_router_backend_requires_token_before_network_call(monkeypatch):
+    calls = []
+
+    def fake_post(url, *, json, timeout, headers=None):
+        calls.append(url)
+        return FakeResponse()
+
+    monkeypatch.setattr("velvet_rope.model_backends._post_chat_completion", fake_post)
+    monkeypatch.setenv("VELVET_BACKEND", "router")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+    monkeypatch.delenv("VELVET_OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("HF_API_TOKEN", raising=False)
+    backend = backend_from_env()
+
+    with pytest.raises(RuntimeError, match="HF_TOKEN"):
+        backend.generate_turn(
+            character_prompt="Marlowe",
+            history=[],
+            state_summary="rapport=20",
+            player_message="hello",
+        )
+
+    assert calls == []
+
+
 def test_backend_from_env_rejects_deterministic_in_contest_mode(monkeypatch):
     monkeypatch.setenv("VELVET_CONTEST_MODE", "1")
     monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
@@ -136,6 +194,22 @@ def test_backend_from_env_rejects_deterministic_on_huggingface_space(monkeypatch
     monkeypatch.delenv("VELVET_CONTEST_MODE", raising=False)
 
     with pytest.raises(RuntimeError, match="deterministic backend is disabled"):
+        backend_from_env()
+
+
+def test_backend_from_env_rejects_unknown_explicit_backend(monkeypatch):
+    monkeypatch.setenv("VELVET_BACKEND", "rotary-phone")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
+
+    with pytest.raises(RuntimeError, match="Unsupported backend value 'rotary-phone' from VELVET_BACKEND"):
+        backend_from_env()
+
+
+def test_backend_from_env_reports_legacy_backend_name_for_unknown_value(monkeypatch):
+    monkeypatch.setenv("VELVET_MODEL_BACKEND", "rotary-phone")
+    monkeypatch.delenv("VELVET_BACKEND", raising=False)
+
+    with pytest.raises(RuntimeError, match="Unsupported backend value 'rotary-phone' from VELVET_MODEL_BACKEND"):
         backend_from_env()
 
 
@@ -227,7 +301,8 @@ def test_llama_cpp_python_backend_reports_missing_optional_dependency(monkeypatc
 
 
 def test_backend_from_env_reads_llama_cpp_python_config(monkeypatch):
-    monkeypatch.setenv("VELVET_MODEL_BACKEND", "llama-cpp-python")
+    monkeypatch.setenv("VELVET_BACKEND", "llamacpp")
+    monkeypatch.delenv("VELVET_MODEL_BACKEND", raising=False)
     monkeypatch.setenv("VELVET_LLAMA_CPP_MODEL_PATH", "/models/gemma.gguf")
     monkeypatch.setenv("VELVET_LLAMA_CPP_CHAT_FORMAT", "gemma")
     monkeypatch.setenv("VELVET_LLAMA_CPP_N_CTX", "8192")

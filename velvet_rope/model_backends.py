@@ -149,6 +149,7 @@ class OpenAICompatibleBackend:
     base_url: str
     model: str
     api_key: str = ""
+    api_key_hint: str = ""
     timeout_seconds: int = 60
     temperature: float = 0.8
     max_tokens: int = 0
@@ -161,6 +162,8 @@ class OpenAICompatibleBackend:
         state_summary: str,
         player_message: str,
     ) -> str:
+        if self.api_key_hint and not self.api_key.strip():
+            raise RuntimeError(self.api_key_hint)
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key.strip() else None
         request_json: dict[str, Any] = {
             "model": self.model,
@@ -236,12 +239,16 @@ def _load_llama_class() -> Any:
 
 
 def backend_from_env() -> ModelBackend:
-    backend = os.getenv("VELVET_MODEL_BACKEND", "deterministic").strip().lower()
-    if backend in {"huggingface-router", "hf-router", "huggingface"}:
+    backend, backend_source = _backend_config_from_env()
+    if backend in {"router", "huggingface-router", "hf-router", "huggingface"}:
         return OpenAICompatibleBackend(
             base_url=os.getenv("VELVET_OPENAI_BASE_URL", "https://router.huggingface.co/v1"),
             model=os.getenv("VELVET_MODEL_NAME", "google/gemma-4-26B-A4B-it"),
             api_key=_first_env("VELVET_OPENAI_API_KEY", "HF_TOKEN", "HF_API_TOKEN"),
+            api_key_hint=(
+                "Set HF_TOKEN or VELVET_OPENAI_API_KEY before using "
+                "VELVET_BACKEND=router."
+            ),
             timeout_seconds=_env_int("VELVET_MODEL_TIMEOUT_SECONDS", 60),
             temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),
             max_tokens=_env_int("VELVET_MODEL_MAX_TOKENS", 0),
@@ -255,19 +262,42 @@ def backend_from_env() -> ModelBackend:
             temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),
             max_tokens=_env_int("VELVET_MODEL_MAX_TOKENS", 0),
         )
-    if backend in {"llama-cpp-python", "llama.cpp-python", "llamacpp-python"}:
+    if backend in {"llamacpp", "llama-cpp", "llama.cpp", "llama-cpp-python", "llama.cpp-python", "llamacpp-python"}:
         return LlamaCppPythonBackend(
             model_path=os.getenv("VELVET_LLAMA_CPP_MODEL_PATH", ""),
             chat_format=os.getenv("VELVET_LLAMA_CPP_CHAT_FORMAT", ""),
             n_ctx=_env_int("VELVET_LLAMA_CPP_N_CTX", 4096),
             n_threads=_env_int("VELVET_LLAMA_CPP_N_THREADS", 0),
         )
-    if _contest_runtime_enabled():
+    if backend == "deterministic":
+        if _contest_runtime_enabled():
+            raise RuntimeError(
+                "The deterministic backend is disabled in contest runtime. "
+                "Set VELVET_BACKEND=router or another real model backend."
+            )
+        return DeterministicMarloweBackend()
+    if _backend_explicitly_configured():
         raise RuntimeError(
-            "The deterministic backend is disabled in contest runtime. "
-            "Set VELVET_MODEL_BACKEND=huggingface-router or another real model backend."
+            f"Unsupported backend value {backend!r} from {backend_source}. "
+            "Use router, openai-compatible, llamacpp, or deterministic."
         )
     return DeterministicMarloweBackend()
+
+
+def _backend_name_from_env() -> str:
+    return _backend_config_from_env()[0]
+
+
+def _backend_config_from_env() -> tuple[str, str]:
+    for name in ("VELVET_MODEL_BACKEND", "VELVET_BACKEND"):
+        value = os.getenv(name, "")
+        if value.strip():
+            return value.strip().lower(), name
+    return "deterministic", "default"
+
+
+def _backend_explicitly_configured() -> bool:
+    return bool(_first_env("VELVET_MODEL_BACKEND", "VELVET_BACKEND"))
 
 
 def _contest_runtime_enabled() -> bool:
