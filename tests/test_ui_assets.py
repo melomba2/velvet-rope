@@ -9,7 +9,7 @@ from velvet_rope.art import (
 )
 from velvet_rope.characters import MARLOWE
 from velvet_rope.state import GameStatus, Mood, new_game_state
-from velvet_rope.ui import CSS, _scene_html
+from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
 
 
 def test_manifest_assets_are_local_to_runtime_art_root():
@@ -94,7 +94,7 @@ def test_scene_uses_single_background_stage_without_nested_visual_boxes():
 
 def test_css_positions_victory_rope_animation_as_foreground_overlay():
     assert ".scene-composition" in CSS
-    assert "min-height: 400px;" in CSS
+    assert "height: calc(100% - 52px);" in CSS
     assert ".velvet-rope-layer" in CSS
     assert "position: absolute;" in CSS
     assert "bottom: -125px;" in CSS
@@ -114,10 +114,37 @@ def test_css_marlowe_box_is_dark_but_visibly_transparent():
 def test_css_places_status_at_scene_bottom():
     assert ".marlowe-figure" in CSS
     assert ".stage-status" in CSS
-    assert "bottom: 28px;" in CSS
+    assert "bottom: 24px;" in CSS
 
 
 def test_css_references_stage_background_assets_directly():
     assert "door_bg.png" in CSS
     assert "state_win_bg.png" in CSS
     assert "state_loss_bg.png" in CSS
+
+
+def test_header_uses_general_game_pitch_without_presenter_or_level_stamp():
+    header = _header_html()
+
+    assert "The Nopelist presents" not in header
+    assert "Marlowe" not in header
+    assert "Level 1" not in header
+    assert "Read the room" in header
+    assert "talk your way past." in header
+    assert "talk your way past the rope" not in header
+
+
+def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
+    hint = _read_room_html(new_game_state(MARLOWE))
+
+    assert "speech_bubble.png" not in hint
+    assert "Current mood" in hint
+    assert "Read the room" in hint
+    assert ".chat-panel" in CSS
+    assert ".velvet-rail" not in CSS
+    assert ".locked-level" not in CSS
+    assert "__ROPE_ICON_URL__" not in CSS
+    assert "level-select-card::before" not in CSS
+    assert "justify-content: flex-end;" in CSS
+    assert "flex: 0 0 260px !important;" in CSS
+    assert "max-width: 260px;" in CSS

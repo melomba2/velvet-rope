@@ -45,22 +45,20 @@ CSS = """
 }
 
 #velvet-app {
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 28px 18px 34px;
+  padding: 8px 16px 8px;
 }
 
 .velvet-header {
   display: flex;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
   align-items: end;
-  margin-bottom: 18px;
+  margin-bottom: 8px;
 }
 
-.velvet-kicker,
-.rail-label,
-.level-kicker {
+.rail-label {
   color: var(--vr-gold);
   font-size: 0.72rem;
   font-weight: 800;
@@ -70,31 +68,52 @@ CSS = """
 
 .velvet-header h1 {
   color: var(--vr-text-gold);
-  font-size: clamp(2.45rem, 7vw, 5.4rem);
+  font-size: clamp(2.2rem, 4.2vw, 3.65rem);
   line-height: 0.92;
-  margin: 4px 0 6px;
+  margin: 0 0 4px;
 }
 
 .velvet-header p {
   color: var(--vr-muted);
-  font-size: 1rem;
-  line-height: 1.5;
-  max-width: 640px;
+  font-size: 0.94rem;
+  line-height: 1.28;
+  max-width: 620px;
   margin: 0;
 }
 
-.velvet-stamp {
-  border: 1px solid var(--vr-gold);
+.level-select-card {
+  position: relative;
+  flex: 0 0 260px !important;
+  width: 260px;
+  max-width: 260px;
+  margin-left: auto;
+  padding: 8px 10px;
+  border: 1px solid rgba(214, 177, 94, 0.58);
   border-radius: 8px;
-  color: var(--vr-text-gold);
-  padding: 10px 12px;
-  min-width: 156px;
-  text-align: center;
-  background: rgba(18, 13, 20, 0.78);
+  background:
+    linear-gradient(180deg, rgba(18, 13, 20, 0.9), rgba(16, 16, 20, 0.86)),
+    radial-gradient(circle at 92% 18%, rgba(214, 177, 94, 0.16), transparent 8rem);
+  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.24);
+}
+
+.level-select-card > .gap {
+  justify-content: flex-end;
+}
+
+.level-select-card .wrap,
+.level-select-card .secondary-wrap,
+.level-select-card .form {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.level-select-card label {
+  margin: 0 !important;
 }
 
 .velvet-stage,
-.velvet-rail {
+.chat-panel {
   border: 1px solid var(--vr-border);
   border-radius: 8px;
   background: rgba(18, 13, 20, 0.94);
@@ -103,12 +122,15 @@ CSS = """
 }
 
 .velvet-stage {
-  min-height: 500px;
+  min-height: 0;
 }
 
 .nightclub-scene {
   position: relative;
-  padding: 18px 18px 0;
+  min-height: min(54vh, 500px);
+  height: calc(100vh - 150px);
+  max-height: 500px;
+  padding: 14px 14px 0;
   isolation: isolate;
   background:
     linear-gradient(90deg, rgba(179, 39, 53, 0.22), transparent 26%, transparent 74%, rgba(214, 177, 94, 0.2)),
@@ -159,13 +181,13 @@ CSS = """
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .door-sign h2 {
   color: var(--vr-text-gold);
-  font-size: 1.42rem;
+  font-size: 1.3rem;
   line-height: 1.1;
   margin: 0;
 }
@@ -181,8 +203,8 @@ CSS = """
   border-radius: 8px;
   color: var(--vr-text-gold);
   background: rgba(16, 16, 20, 0.88);
-  padding: 8px 10px;
-  font-size: 0.88rem;
+  padding: 7px 9px;
+  font-size: 0.84rem;
   font-weight: 800;
   white-space: nowrap;
   box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.62);
@@ -201,8 +223,9 @@ CSS = """
 
 .scene-composition {
   position: relative;
-  min-height: 400px;
-  margin-top: 12px;
+  min-height: 0;
+  height: calc(100% - 52px);
+  margin-top: 6px;
 }
 
 .scene-composition::after {
@@ -220,7 +243,7 @@ CSS = """
   left: 0;
   bottom: 0;
   z-index: 2;
-  width: clamp(236px, 37%, 350px);
+  width: clamp(224px, 38%, 340px);
   max-height: 96%;
   padding: 8px 8px 0;
   border: 2px solid rgba(214, 177, 94, 0.5);
@@ -245,7 +268,7 @@ CSS = """
   line-height: 1.45;
   position: absolute;
   right: 18px;
-  bottom: 28px;
+  bottom: 24px;
   z-index: 5;
   max-width: min(46ch, 52%);
   text-shadow: 0 2px 0 #09090b, 0 0 12px #09090b;
@@ -285,16 +308,47 @@ CSS = """
   filter: drop-shadow(0 12px 0 rgba(9, 9, 11, 0.24));
 }
 
-.chat-wrap {
-  padding: 14px 14px 18px;
-  background: #09090b;
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  min-height: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 13, 20, 0.96), rgba(9, 9, 11, 0.98)),
+    radial-gradient(circle at 94% 8%, rgba(214, 177, 94, 0.12), transparent 10rem);
 }
 
-.chat-wrap .bubble-wrap,
-.chat-wrap .message,
-.chat-wrap .chatbot,
-.chat-wrap .chatbot-container {
+.chat-panel .bubble-wrap,
+.chat-panel .message,
+.chat-panel .chatbot,
+.chat-panel .chatbot-container {
   border-radius: 8px;
+}
+
+.read-room-panel {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  min-height: 64px;
+  padding: 8px;
+  border: 1px solid rgba(214, 177, 94, 0.28);
+  border-radius: 8px;
+  background: rgba(16, 16, 20, 0.78);
+}
+
+.read-room-panel h3 {
+  color: var(--vr-text-gold);
+  margin: 1px 0 2px;
+  font-size: 0.92rem;
+  line-height: 1.15;
+}
+
+.read-room-panel p {
+  color: var(--vr-muted);
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.25;
 }
 
 .gradio-container textarea,
@@ -322,34 +376,8 @@ CSS = """
   color: var(--vr-text-gold) !important;
 }
 
-.velvet-rail {
-  padding: 16px;
-}
-
-.read-room-panel,
-.locked-level {
-  border: 1px solid var(--vr-border);
-  border-radius: 8px;
-  background: var(--vr-panel-2);
-}
-
-.read-room-panel {
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.read-room-panel h3,
-.locked-level h3 {
-  color: var(--vr-text-gold);
-  margin: 4px 0 8px;
-  font-size: 1.06rem;
-}
-
-.read-room-panel p,
-.locked-level p {
-  color: var(--vr-muted);
-  margin: 0;
-  line-height: 1.45;
+.gradio-container footer {
+  display: none !important;
 }
 
 .mood-dot {
@@ -372,23 +400,6 @@ CSS = """
   background: var(--vr-success);
 }
 
-.locked-level {
-  padding: 13px;
-  margin-top: 12px;
-  opacity: 0.78;
-}
-
-.lock-pill {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid rgba(214, 177, 94, 0.32);
-  border-radius: 999px;
-  color: var(--vr-muted);
-  font-size: 0.78rem;
-  padding: 4px 8px;
-  margin-top: 10px;
-}
-
 @media (max-width: 780px) {
   #velvet-app {
     padding: 18px 10px 28px;
@@ -397,10 +408,24 @@ CSS = """
   .velvet-header {
     align-items: start;
     flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .level-select-card {
+    flex: 1 1 auto;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .nightclub-scene {
+    min-height: 470px;
+    height: auto;
+    max-height: none;
   }
 
   .scene-composition {
     min-height: 430px;
+    height: auto;
   }
 
   .marlowe-box {
@@ -445,77 +470,79 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
         state = gr.State(service.new_game())
 
         with gr.Column(elem_id="velvet-app"):
-            gr.HTML(_header_html())
-            with gr.Row(equal_height=False):
-                with gr.Column(scale=7, min_width=420, elem_classes=["velvet-stage"]):
+            with gr.Row(equal_height=False, elem_classes=["velvet-header"]):
+                gr.HTML(_header_html())
+                with gr.Column(min_width=230, elem_classes=["level-select-card"]):
+                    gr.Dropdown(
+                        label="Level",
+                        choices=["Level 1 · Nightclub Door"],
+                        value="Level 1 · Nightclub Door",
+                        interactive=True,
+                    )
+            with gr.Row(equal_height=False, elem_classes=["play-shell"]):
+                with gr.Column(scale=7, min_width=470, elem_classes=["velvet-stage"]):
                     scene = gr.HTML()
-                    with gr.Column(elem_classes=["chat-wrap"]):
-                        chatbot = gr.Chatbot(
-                            label="Chat transcript",
-                            type="messages",
-                            height=320,
-                            show_copy_button=False,
-                            avatar_images=(None, None),
-                        )
-                        player_input = gr.Textbox(
-                            label="Say something to Marlowe",
-                            placeholder="Read the room. Specific respect lands better than flattery.",
-                            lines=2,
-                            max_lines=3,
-                        )
-                        with gr.Row():
-                            send = gr.Button("Send", variant="primary", scale=2)
-                            reset = gr.Button("Reset", variant="secondary", scale=1)
-                with gr.Column(scale=3, min_width=280, elem_classes=["velvet-rail"]):
-                    side_rail = gr.HTML()
+                with gr.Column(scale=4, min_width=340, elem_classes=["chat-panel"]):
+                    read_room = gr.HTML()
+                    chatbot = gr.Chatbot(
+                        label="Conversation",
+                        type="messages",
+                        height=245,
+                        show_copy_button=False,
+                        avatar_images=(None, None),
+                    )
+                    player_input = gr.Textbox(
+                        label="Say something to Marlowe",
+                        placeholder="Try a specific read, not generic charm.",
+                        lines=1,
+                        max_lines=1,
+                    )
+                    with gr.Row():
+                        send = gr.Button("Send", variant="primary", scale=2)
+                        reset = gr.Button("Reset", variant="secondary", scale=1)
 
-        def render(current: GameState) -> tuple[str, list[dict[str, str]], str]:
-            return _scene_html(current), _chat_messages(current), _side_rail_html(current)
+        def render(current: GameState) -> tuple[str, str, list[dict[str, str]]]:
+            return _scene_html(current), _read_room_html(current), _chat_messages(current)
 
         def submit(
             message: str,
             current: GameState,
-        ) -> tuple[GameState, str, list[dict[str, str]], str, str]:
+        ) -> tuple[GameState, str, str, list[dict[str, str]], str]:
             cleaned = message.strip()
             if not cleaned:
-                scene_html, messages, rail_html = render(current)
-                return current, scene_html, messages, rail_html, ""
+                scene_html, hint_html, messages = render(current)
+                return current, scene_html, hint_html, messages, ""
             updated = service.play_turn(current, cleaned)
-            scene_html, messages, rail_html = render(updated)
-            return updated, scene_html, messages, rail_html, ""
+            scene_html, hint_html, messages = render(updated)
+            return updated, scene_html, hint_html, messages, ""
 
-        def restart() -> tuple[GameState, str, list[dict[str, str]], str, str]:
+        def restart() -> tuple[GameState, str, str, list[dict[str, str]], str]:
             fresh = service.new_game()
-            scene_html, messages, rail_html = render(fresh)
-            return fresh, scene_html, messages, rail_html, ""
+            scene_html, hint_html, messages = render(fresh)
+            return fresh, scene_html, hint_html, messages, ""
 
-        app.load(render, inputs=state, outputs=[scene, chatbot, side_rail])
+        app.load(render, inputs=state, outputs=[scene, read_room, chatbot])
         send.click(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, chatbot, side_rail, player_input],
+            outputs=[state, scene, read_room, chatbot, player_input],
         )
         player_input.submit(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, chatbot, side_rail, player_input],
+            outputs=[state, scene, read_room, chatbot, player_input],
         )
-        reset.click(restart, outputs=[state, scene, chatbot, side_rail, player_input])
+        reset.click(restart, outputs=[state, scene, read_room, chatbot, player_input])
 
     return app
 
 
 def _header_html() -> str:
     return """
-    <header class="velvet-header">
-      <div>
-        <div class="velvet-kicker">The Nopelist presents</div>
-        <h1>Velvet Rope</h1>
-        <p>Talk past the door by reading Marlowe's mood, finding the soft spot,
-        and staying far away from obvious rule-breaking.</p>
-      </div>
-      <div class="velvet-stamp">Level 1<br><strong>Nightclub Door</strong></div>
-    </header>
+    <div class="velvet-title">
+      <h1>Velvet Rope</h1>
+      <p>Read the room, charm the gatekeeper, and talk your way past.</p>
+    </div>
     """
 
 
@@ -548,29 +575,16 @@ def _scene_html(state: GameState) -> str:
     """
 
 
-def _side_rail_html(state: GameState) -> str:
+def _read_room_html(state: GameState) -> str:
     mood_value = state.mood.value
     return f"""
-    <aside>
-      <section class="read-room-panel">
-        <div class="rail-label">Current mood</div>
-        <h3><span class="mood-dot {html.escape(mood_value)}"></span>{html.escape(_mood_label(state.mood))}</h3>
+    <section class="read-room-panel">
+      <div>
         <div class="rail-label">Read the room</div>
+        <h3><span class="mood-dot {html.escape(mood_value)}"></span>Current mood: {html.escape(_mood_label(state.mood))}</h3>
         <p>{html.escape(_hint_text(state))}</p>
-      </section>
-      <section class="locked-level">
-        <div class="level-kicker">Locked</div>
-        <h3>Cosmic Bureaucracy</h3>
-        <p>A future velvet rope staffed by a clerk who files emotions in triplicate.</p>
-        <span class="lock-pill">opens after level 1</span>
-      </section>
-      <section class="locked-level">
-        <div class="level-kicker">Locked</div>
-        <h3>Enchanted Manor</h3>
-        <p>A later threshold guarded by manners, curses, and very opinionated candles.</p>
-        <span class="lock-pill">future door</span>
-      </section>
-    </aside>
+      </div>
+    </section>
     """
 
 
