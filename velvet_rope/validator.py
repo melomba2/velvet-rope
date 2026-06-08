@@ -83,9 +83,9 @@ def validate_turn(
     if state.mood is Mood.SOFTENED and next_mood in {Mood.UNIMPRESSED, Mood.AMUSED, Mood.RESPECTED}:
         next_mood = Mood.SOFTENED
     validator_winning_mood = proposed_winning_mood or (
-        state.mood is Mood.SOFTENED
-        and is_softspot_tactic
+        is_softspot_tactic
         and not repeated_tactic
+        and proposed_mood not in {Mood.SUSPICIOUS, Mood.DONE_WITH_YOU}
     )
     next_status = _choose_status(character, next_scores, validator_winning_mood)
 

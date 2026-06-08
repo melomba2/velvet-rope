@@ -321,13 +321,12 @@ def test_repeating_line_logistics_cannot_win_game():
     assert state.scores.softspot_progress == 1
 
 
-def test_two_distinct_softspot_reads_win_game_with_deterministic_backend():
+def test_two_distinct_softspot_reads_win_tutorial_with_deterministic_backend():
     service = GameService(backend=DeterministicMarloweBackend())
     state = service.new_game()
 
     state = service.play_turn(state, "I respect how you manage the line logistics before anyone notices.")
     state = service.play_turn(state, "Also, your shoes must be doing heroic work while you keep everyone safe.")
-    state = service.play_turn(state, "And preventing tiny disasters at this door is real civic labor.")
 
     assert state.status is GameStatus.WON
     assert state.mood is Mood.LETTING_YOU_IN
@@ -354,7 +353,6 @@ def test_game_service_gives_admission_reply_for_validator_driven_win():
     state = service.play_turn(state, "I have cash if the clipboard can suddenly remember my name.")
     state = service.play_turn(state, "Fair. Let me try again: the queue logistics are harder than they look.")
     state = service.play_turn(state, "Your shoes must matter after standing on concrete all night.")
-    state = service.play_turn(state, "You prevent tiny disasters before the club ever knows they happened.")
     assistant_reply = state.history[-1].content.lower()
 
     assert state.status is GameStatus.WON

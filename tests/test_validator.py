@@ -190,6 +190,41 @@ def test_two_distinct_softspots_can_win_when_rapport_is_healthy():
     assert "tiny_disasters" in updated.used_tactics
 
 
+def test_second_distinct_softspot_can_win_tutorial_when_scores_cross_thresholds():
+    state = validate_turn(
+        MARLOWE,
+        new_game_state(MARLOWE),
+        "I respect how you manage the line logistics before anyone notices.",
+        model_turn(
+            mood=Mood.RESPECTED,
+            rapport=12,
+            suspicion=-5,
+            patience=-1,
+            softspot_progress=1,
+            tactic="line_logistics",
+        ),
+    )
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "Those comfortable shoes must be doing heroic work on concrete tonight.",
+        model_turn(
+            mood=Mood.RESPECTED,
+            rapport=12,
+            suspicion=-5,
+            patience=-1,
+            softspot_progress=1,
+            tactic="comfort_empathy",
+        ),
+    )
+
+    assert updated.status is GameStatus.WON
+    assert updated.mood is Mood.LETTING_YOU_IN
+    assert updated.scores.rapport == 44
+    assert updated.scores.softspot_progress == 2
+
+
 def test_two_distinct_softspots_make_softened_state_persist_even_when_model_underscores():
     state = new_game_state(MARLOWE)
     first = validate_turn(
