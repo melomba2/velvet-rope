@@ -4,6 +4,14 @@ import html
 
 import gradio as gr
 
+from velvet_rope.art import (
+    configure_gradio_static_paths,
+    mood_sprite_url,
+    scene_asset_url,
+    scene_background_url,
+    state_rope_url,
+    state_stamp_url,
+)
 from velvet_rope.characters import MARLOWE
 from velvet_rope.game import GameService
 from velvet_rope.state import GameState, GameStatus, Mood
@@ -100,10 +108,51 @@ CSS = """
 
 .nightclub-scene {
   position: relative;
-  padding: 18px;
+  padding: 18px 18px 0;
+  isolation: isolate;
   background:
-    linear-gradient(90deg, rgba(179, 39, 53, 0.12), transparent 24%, transparent 76%, rgba(214, 177, 94, 0.12)),
-    linear-gradient(160deg, #120d14 0%, #1f101b 52%, #070708 100%);
+    linear-gradient(90deg, rgba(179, 39, 53, 0.22), transparent 26%, transparent 74%, rgba(214, 177, 94, 0.2)),
+    linear-gradient(180deg, rgba(9, 9, 11, 0.08), rgba(9, 9, 11, 0.58)),
+    url("__DOOR_BG_URL__");
+  background-position: center;
+  background-size: cover;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+
+.nightclub-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(9, 9, 11, 0.2);
+  pointer-events: none;
+}
+
+.nightclub-scene.is-won::before {
+  background: rgba(30, 18, 10, 0.1);
+}
+
+.nightclub-scene.is-won {
+  background:
+    linear-gradient(90deg, rgba(79, 143, 115, 0.2), transparent 30%, transparent 70%, rgba(214, 177, 94, 0.18)),
+    linear-gradient(180deg, rgba(9, 9, 11, 0.02), rgba(9, 9, 11, 0.38)),
+    url("__WIN_BG_URL__");
+  background-position: center;
+  background-size: cover;
+}
+
+.nightclub-scene.is-lost::before {
+  background: rgba(9, 9, 11, 0.36);
+}
+
+.nightclub-scene.is-lost {
+  background:
+    linear-gradient(90deg, rgba(179, 39, 53, 0.22), transparent 30%, transparent 70%, rgba(9, 9, 11, 0.32)),
+    linear-gradient(180deg, rgba(9, 9, 11, 0.14), rgba(9, 9, 11, 0.62)),
+    url("__LOSS_BG_URL__");
+  background-position: center;
+  background-size: cover;
 }
 
 .door-sign {
@@ -128,116 +177,112 @@ CSS = """
 }
 
 .mood-badge {
-  border: 1px solid var(--vr-gold);
+  border: 2px solid var(--vr-gold);
   border-radius: 8px;
   color: var(--vr-text-gold);
-  background: rgba(16, 16, 20, 0.92);
+  background: rgba(16, 16, 20, 0.88);
   padding: 8px 10px;
   font-size: 0.88rem;
   font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.62);
 }
 
-.doorway-frame {
-  border: 1px solid rgba(214, 177, 94, 0.44);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(214, 177, 94, 0.1), transparent 18%, transparent 82%, rgba(214, 177, 94, 0.1)),
-    #101014;
-  min-height: 284px;
-  display: grid;
-  grid-template-columns: minmax(160px, 0.62fr) minmax(180px, 1fr);
-  gap: 18px;
-  align-items: end;
-  padding: 20px;
+.mood-badge.suspicious,
+.mood-badge.done_with_you {
+  border-color: var(--vr-danger);
 }
 
-.marlowe-card {
-  border: 1px solid rgba(214, 177, 94, 0.35);
-  border-radius: 8px;
-  background: linear-gradient(180deg, #191018 0%, #0b0b0d 100%);
-  padding: 16px;
-  min-height: 226px;
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
+.mood-badge.respected,
+.mood-badge.softened,
+.mood-badge.letting_you_in {
+  border-color: var(--vr-success);
 }
 
-.marlowe-portrait {
-  width: 132px;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  border: 1px solid rgba(214, 177, 94, 0.46);
-  background:
-    radial-gradient(circle at 50% 28%, #d6b15e 0 11%, transparent 12%),
-    radial-gradient(circle at 37% 42%, #f7e4a8 0 3%, transparent 4%),
-    radial-gradient(circle at 63% 42%, #f7e4a8 0 3%, transparent 4%),
-    linear-gradient(180deg, #301622 0%, #130d14 100%);
-  color: var(--vr-text-gold);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 1.25rem;
-  display: grid;
-  place-items: center;
-  margin-bottom: 14px;
-  box-shadow: 0 0 34px rgba(179, 39, 53, 0.18);
+.scene-composition {
+  position: relative;
+  min-height: 400px;
+  margin-top: 12px;
 }
 
-.marlowe-name {
-  color: var(--vr-text-gold);
-  font-size: 1.1rem;
-  font-weight: 850;
+.scene-composition::after {
+  content: "";
+  position: absolute;
+  inset: auto -18px 0;
+  height: 34%;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent, rgba(9, 9, 11, 0.42));
+  pointer-events: none;
 }
 
-.marlowe-title,
-.door-copy,
+.marlowe-box {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  width: clamp(236px, 37%, 350px);
+  max-height: 96%;
+  padding: 8px 8px 0;
+  border: 2px solid rgba(214, 177, 94, 0.5);
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0.58), rgba(9, 9, 11, 0.72));
+  box-shadow: inset 0 0 0 2px rgba(9, 9, 11, 0.32), 0 16px 0 rgba(9, 9, 11, 0.18);
+  overflow: hidden;
+}
+
+.marlowe-figure {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 10px 0 rgba(9, 9, 11, 0.2));
+}
+
 .stage-status {
   color: var(--vr-muted);
   line-height: 1.45;
-}
-
-.door-copy {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
-  gap: 14px;
-}
-
-.club-door {
-  min-height: 172px;
-  border: 1px solid rgba(214, 177, 94, 0.36);
-  border-radius: 8px 8px 4px 4px;
-  background:
-    linear-gradient(90deg, transparent 48%, rgba(214, 177, 94, 0.35) 49%, rgba(214, 177, 94, 0.35) 51%, transparent 52%),
-    radial-gradient(circle at 50% 38%, rgba(227, 66, 79, 0.2), transparent 36%),
-    linear-gradient(180deg, #0e0e12 0%, #050506 100%);
-}
-
-.stage-status {
+  position: absolute;
+  right: 18px;
+  bottom: 28px;
+  z-index: 5;
+  max-width: min(46ch, 52%);
+  text-shadow: 0 2px 0 #09090b, 0 0 12px #09090b;
   border-left: 3px solid var(--vr-rope);
   padding-left: 12px;
 }
 
-.velvet-rope-bar {
-  height: 9px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #711421, var(--vr-rope-hot), #711421);
-  box-shadow: 0 0 22px rgba(227, 66, 79, 0.62);
-  margin: 18px 8px 4px;
+.state-stamp {
+  position: absolute;
+  right: 28px;
+  top: 72px;
+  z-index: 6;
+  width: clamp(112px, 18vw, 166px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 8px 0 rgba(9, 9, 11, 0.34));
 }
 
-.rope-posts {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 8px;
+.velvet-rope-layer {
+  position: absolute;
+  left: 50%;
+  bottom: -125px;
+  z-index: 4;
+  width: min(106%, 800px);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
-.rope-posts span {
-  width: 14px;
-  height: 42px;
-  border-radius: 999px 999px 4px 4px;
-  background: linear-gradient(180deg, var(--vr-gold), #694b1c);
-  box-shadow: 0 0 16px rgba(214, 177, 94, 0.3);
+.velvet-rope-sprite {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 12px 0 rgba(9, 9, 11, 0.24));
 }
 
 .chat-wrap {
@@ -354,8 +399,32 @@ CSS = """
     flex-direction: column;
   }
 
-  .doorway-frame {
-    grid-template-columns: 1fr;
+  .scene-composition {
+    min-height: 430px;
+  }
+
+  .marlowe-box {
+    left: 0;
+    bottom: 0;
+    width: min(76%, 290px);
+  }
+
+  .stage-status {
+    right: 8px;
+    bottom: 22px;
+    max-width: calc(100% - 16px);
+    font-size: 0.88rem;
+  }
+
+  .velvet-rope-layer {
+    bottom: -96px;
+    width: 148%;
+  }
+
+  .state-stamp {
+    right: 10px;
+    top: 76px;
+    width: 112px;
   }
 
   .door-sign {
@@ -363,11 +432,14 @@ CSS = """
     flex-direction: column;
   }
 }
-"""
+""".replace("__DOOR_BG_URL__", scene_asset_url("door_background"))
+CSS = CSS.replace("__WIN_BG_URL__", scene_asset_url("win_background"))
+CSS = CSS.replace("__LOSS_BG_URL__", scene_asset_url("loss_background"))
 
 
 def build_app(service: GameService | None = None) -> gr.Blocks:
     service = service or GameService()
+    configure_gradio_static_paths(gr)
 
     with gr.Blocks(css=CSS, title="Velvet Rope", theme=gr.themes.Base()) as app:
         state = gr.State(service.new_game())
@@ -450,29 +522,28 @@ def _header_html() -> str:
 def _scene_html(state: GameState) -> str:
     mood_label = _mood_label(state.mood)
     status_line = _status_line(state)
-    portrait = html.escape(_portrait_for(state.mood))
+    mood_value = html.escape(state.mood.value)
+    background_url = html.escape(scene_background_url(state), quote=True)
+    sprite_url = html.escape(mood_sprite_url(state.mood), quote=True)
+    stamp_html = _stamp_html(state)
+    rope_html = _rope_html(state)
     return f"""
-    <section class="nightclub-scene">
+    <section class="nightclub-scene {_scene_class(state)}" data-stage-bg="{background_url}">
       <div class="door-sign">
         <div>
           <h2>{html.escape(MARLOWE.display_name)}</h2>
           <p>{html.escape(MARLOWE.title)} at The Nopelist</p>
         </div>
-        <div class="mood-badge">Mood: {html.escape(mood_label)}</div>
+        <div class="mood-badge {mood_value}">Mood: {html.escape(mood_label)}</div>
       </div>
-      <div class="doorway-frame">
-        <div class="marlowe-card">
-          <div class="marlowe-portrait" aria-label="Marlowe portrait">{portrait}</div>
-          <div class="marlowe-name">{html.escape(MARLOWE.display_name)}</div>
-          <div class="marlowe-title">Clipboard sovereign. Shoe survivor. Door philosopher.</div>
+      <div class="scene-composition">
+        <div class="marlowe-box">
+          <img class="marlowe-figure" src="{sprite_url}" alt="Marlowe looks {html.escape(mood_label)}">
         </div>
-        <div class="door-copy">
-          <div class="club-door" aria-hidden="true"></div>
-          <div class="stage-status">{html.escape(status_line)}</div>
-        </div>
+        {stamp_html}
+        <div class="stage-status">{html.escape(status_line)}</div>
+        {rope_html}
       </div>
-      <div class="rope-posts"><span></span><span></span></div>
-      <div class="velvet-rope-bar" aria-label="literal velvet rope"></div>
     </section>
     """
 
@@ -540,14 +611,24 @@ def _mood_label(mood: Mood) -> str:
     return mood.value.replace("_", " ")
 
 
-def _portrait_for(mood: Mood) -> str:
-    portraits = {
-        Mood.UNIMPRESSED: "-_-",
-        Mood.SUSPICIOUS: "o_O",
-        Mood.AMUSED: ":-]",
-        Mood.RESPECTED: ":-)",
-        Mood.SOFTENED: ":')",
-        Mood.LETTING_YOU_IN: ":-D",
-        Mood.DONE_WITH_YOU: ">:|",
-    }
-    return portraits[mood]
+def _scene_class(state: GameState) -> str:
+    return f"is-{state.status.value} mood-{state.mood.value}"
+
+
+def _stamp_html(state: GameState) -> str:
+    stamp_url = state_stamp_url(state)
+    if stamp_url is None:
+        return ""
+    label = "Admitted" if state.status is GameStatus.WON else "Denied"
+    return f'<img class="state-stamp" src="{html.escape(stamp_url, quote=True)}" alt="{label}">'
+
+
+def _rope_html(state: GameState) -> str:
+    rope_url = state_rope_url(state)
+    if rope_url is None:
+        return ""
+    return (
+        '<div class="velvet-rope-layer">'
+        f'<img class="velvet-rope-sprite" src="{html.escape(rope_url, quote=True)}" alt="the velvet rope opens">'
+        "</div>"
+    )
