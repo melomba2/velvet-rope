@@ -53,7 +53,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["comfort_empathy"],
             "used_tactics_exclude": ["bribery"],
             "hint_contains": "noticed you noticed"
@@ -71,7 +71,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["line_logistics"],
             "used_tactics_exclude": ["bribery", "entitlement"]
           }
@@ -88,7 +88,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["crowd_safety"],
             "used_tactics_exclude": ["bribery", "line_logistics"]
           }
@@ -123,7 +123,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["comfort_empathy"],
             "used_tactics_exclude": ["entitlement"]
           }
@@ -174,7 +174,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["crowd_safety"],
             "hint_contains": "noticed you noticed"
           }
@@ -191,7 +191,7 @@
           "expect": {
             "status": "active",
             "mood": "respected",
-            "scores": {"rapport": 26, "suspicion": 33, "patience": 69, "softspot_progress": 1},
+            "scores": {"rapport": 30, "suspicion": 33, "patience": 69, "softspot_progress": 1},
             "used_tactics_include": ["tiny_disasters"],
             "hint_contains": "noticed you noticed"
           }
@@ -287,7 +287,7 @@
           "expect": {
             "status": "won",
             "mood": "letting_you_in",
-            "scores": {"rapport": 45, "suspicion": 28, "patience": 62, "softspot_progress": 2},
+            "scores": {"rapport": 49, "suspicion": 28, "patience": 62, "softspot_progress": 2},
             "used_tactics_include": ["line_logistics", "crowd_safety"]
           }
         }

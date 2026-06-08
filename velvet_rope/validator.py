@@ -73,6 +73,8 @@ def validate_turn(
     delta = _close_endgame_delta(character, state, proposed_mood, delta)
     next_scores = _apply_delta(state.scores, delta)
     next_mood = _choose_mood(character, next_scores, proposed_mood)
+    if state.mood is not Mood.SOFTENED and next_mood is Mood.SOFTENED and next_scores.softspot_progress < character.min_win_softspot_progress:
+        next_mood = Mood.RESPECTED
     if (
         (touches_softspot or is_softspot_tactic)
         and not repeated_tactic
@@ -125,7 +127,7 @@ def _clamp_delta(
     if not is_softspot_tactic or proposed_mood in {Mood.SUSPICIOUS, Mood.DONE_WITH_YOU}:
         return clamped
     return ScoreState(
-        rapport=max(clamped.rapport, 6),
+        rapport=max(clamped.rapport, 10),
         suspicion=min(clamped.suspicion, -2),
         patience=clamped.patience,
         softspot_progress=max(clamped.softspot_progress, 1),

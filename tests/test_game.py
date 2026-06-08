@@ -180,6 +180,7 @@ def test_game_service_sends_strict_model_output_contract():
 
     service.play_turn(service.new_game(), "hello")
 
+    assert "in his 50s" in backend.character_prompt
     assert "Allowed mood values: unimpressed, suspicious, amused, respected, softened, letting_you_in, done_with_you" in backend.character_prompt
     assert '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}' in backend.character_prompt
     assert "Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in" in backend.character_prompt

@@ -142,6 +142,27 @@ def test_repeating_same_softspot_does_not_add_progress():
     assert "same read twice" in repeated.hint
 
 
+def test_first_softspot_caps_premature_softened_mood_at_respected():
+    state = new_game_state(MARLOWE)
+
+    updated = validate_turn(
+        MARLOWE,
+        state,
+        "I respect the clipboard work that keeps the line sane.",
+        model_turn(
+            mood=Mood.SOFTENED,
+            rapport=12,
+            suspicion=-5,
+            patience=-1,
+            softspot_progress=1,
+            tactic="line_logistics",
+        ),
+    )
+
+    assert updated.scores.softspot_progress == 1
+    assert updated.mood is Mood.RESPECTED
+
+
 def test_repeated_softspot_does_not_downgrade_softened_mood():
     state = replace(
         new_game_state(MARLOWE),
@@ -225,7 +246,7 @@ def test_second_distinct_softspot_can_win_tutorial_when_scores_cross_thresholds(
     assert updated.scores.softspot_progress == 2
 
 
-def test_two_distinct_softspots_make_softened_state_persist_even_when_model_underscores():
+def test_two_distinct_softspots_win_tutorial_even_when_model_underscores():
     state = new_game_state(MARLOWE)
     first = validate_turn(
         MARLOWE,
@@ -241,16 +262,11 @@ def test_two_distinct_softspots_make_softened_state_persist_even_when_model_unde
         model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-2, softspot_progress=0),
     )
 
-    third = validate_turn(
-        MARLOWE,
-        second,
-        "I will make your night easier: no drama and no arguing with the rope.",
-        model_turn(mood=Mood.RESPECTED, rapport=1, suspicion=0, patience=-2, softspot_progress=0),
-    )
-
+    assert first.mood is Mood.RESPECTED
     assert second.scores.softspot_progress >= MARLOWE.min_win_softspot_progress
-    assert second.mood is Mood.SOFTENED
-    assert third.mood is Mood.SOFTENED
+    assert second.status is GameStatus.WON
+    assert second.mood is Mood.LETTING_YOU_IN
+    assert second.scores.rapport >= MARLOWE.win_rapport
 
 
 def test_repeated_softspot_category_stops_farming_when_model_renames_tactic():
