@@ -87,7 +87,8 @@ def _asset_url(relative_path: str) -> str:
         public_path = path.relative_to(REPO_ROOT).as_posix()
     except ValueError:
         public_path = path.as_posix()
-    return f"/gradio_api/file={quote(public_path, safe='/._-')}"
+    version = int(path.stat().st_mtime)
+    return f"/gradio_api/file={quote(public_path, safe='/._-')}?v={version}"
 
 
 def _resolve_art_path(relative_path: str) -> Path:
