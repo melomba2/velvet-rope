@@ -183,7 +183,7 @@ def test_repeated_softspot_does_not_downgrade_softened_mood():
     assert "same read twice" in updated.hint
 
 
-def test_two_distinct_softspots_can_win_when_rapport_is_healthy():
+def test_two_distinct_softspots_from_respected_soften_before_win_even_when_model_says_letting_in():
     state = replace(
         new_game_state(MARLOWE),
         scores=ScoreState(rapport=44, suspicion=30, patience=60, softspot_progress=1),
@@ -205,13 +205,13 @@ def test_two_distinct_softspots_can_win_when_rapport_is_healthy():
         ),
     )
 
-    assert updated.status is GameStatus.WON
-    assert updated.mood is Mood.LETTING_YOU_IN
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood is Mood.SOFTENED
     assert updated.scores.softspot_progress == 2
     assert "tiny_disasters" in updated.used_tactics
 
 
-def test_second_distinct_softspot_can_win_tutorial_when_scores_cross_thresholds():
+def test_second_distinct_softspot_softens_tutorial_when_scores_cross_thresholds():
     state = validate_turn(
         MARLOWE,
         new_game_state(MARLOWE),
@@ -240,13 +240,13 @@ def test_second_distinct_softspot_can_win_tutorial_when_scores_cross_thresholds(
         ),
     )
 
-    assert updated.status is GameStatus.WON
-    assert updated.mood is Mood.LETTING_YOU_IN
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood is Mood.SOFTENED
     assert updated.scores.rapport == 44
     assert updated.scores.softspot_progress == 2
 
 
-def test_two_distinct_softspots_win_tutorial_even_when_model_underscores():
+def test_two_distinct_softspots_soften_tutorial_even_when_model_underscores():
     state = new_game_state(MARLOWE)
     first = validate_turn(
         MARLOWE,
@@ -264,8 +264,8 @@ def test_two_distinct_softspots_win_tutorial_even_when_model_underscores():
 
     assert first.mood is Mood.RESPECTED
     assert second.scores.softspot_progress >= MARLOWE.min_win_softspot_progress
-    assert second.status is GameStatus.WON
-    assert second.mood is Mood.LETTING_YOU_IN
+    assert second.status is GameStatus.ACTIVE
+    assert second.mood is Mood.SOFTENED
     assert second.scores.rapport >= MARLOWE.win_rapport
 
 
@@ -589,7 +589,7 @@ def test_win_requires_scores_and_winning_mood():
     strong_state = state.__class__(
         character_id=state.character_id,
         scores=ScoreState(rapport=74, suspicion=40, patience=30, softspot_progress=1),
-        mood=Mood.RESPECTED,
+        mood=Mood.SOFTENED,
         status=GameStatus.ACTIVE,
         history=state.history,
         used_tactics=state.used_tactics,
@@ -607,6 +607,26 @@ def test_win_requires_scores_and_winning_mood():
 
     assert result.status is GameStatus.WON
     assert result.mood is Mood.LETTING_YOU_IN
+
+
+def test_respected_state_cannot_win_before_visible_softening_even_if_model_proposes_win():
+    state = replace(
+        new_game_state(MARLOWE),
+        scores=ScoreState(rapport=74, suspicion=20, patience=80, softspot_progress=1),
+        mood=Mood.RESPECTED,
+        used_tactics={"line_logistics"},
+    )
+
+    result = validate_turn(
+        MARLOWE,
+        state,
+        "Those comfortable shoes must matter during a whole night on concrete.",
+        model_turn(mood=Mood.LETTING_YOU_IN, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert result.status is GameStatus.ACTIVE
+    assert result.mood is Mood.SOFTENED
+    assert result.scores.softspot_progress == 2
 
 
 def test_first_level_wins_at_forty_rapport():
@@ -808,7 +828,7 @@ def test_vivienne_patient_crossing_error_line_does_not_consume_paradox_tactic():
     assert "same read twice" not in updated.hint
 
 
-def test_two_distinct_vivienne_softspots_can_win_level_two():
+def test_two_distinct_vivienne_softspots_soften_level_two_before_win():
     state = validate_turn(
         VIVIENNE,
         new_game_state(VIVIENNE),
@@ -823,8 +843,8 @@ def test_two_distinct_vivienne_softspots_can_win_level_two():
         model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
     )
 
-    assert updated.status is GameStatus.WON
-    assert updated.mood is Mood.LETTING_YOU_IN
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood is Mood.SOFTENED
     assert updated.scores.softspot_progress == 2
     assert "queue_patience" in updated.used_tactics
     assert "paradox_spotting" in updated.used_tactics

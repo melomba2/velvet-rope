@@ -90,7 +90,7 @@ def validate_turn(
         and not repeated_tactic
         and proposed_mood not in {Mood.SUSPICIOUS, Mood.DONE_WITH_YOU}
     )
-    next_status = _choose_status(character, next_scores, validator_winning_mood)
+    next_status = _choose_status(character, next_scores, validator_winning_mood and state.mood is Mood.SOFTENED)
 
     if next_status is GameStatus.WON:
         next_mood = Mood.LETTING_YOU_IN
@@ -213,8 +213,6 @@ def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str
 def _choose_mood(character: Character, scores: ScoreState, proposed_mood: Mood) -> Mood:
     if scores.patience <= 0:
         return Mood.DONE_WITH_YOU
-    if _meets_win_scores(character, scores) and proposed_mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}:
-        return Mood.LETTING_YOU_IN
     if scores.suspicion >= 60:
         return Mood.SUSPICIOUS
     if scores.softspot_progress >= character.min_win_softspot_progress:
@@ -223,6 +221,8 @@ def _choose_mood(character: Character, scores: ScoreState, proposed_mood: Mood) 
         return Mood.RESPECTED
     if proposed_mood is Mood.AMUSED:
         return Mood.AMUSED
+    if proposed_mood is Mood.LETTING_YOU_IN:
+        return Mood.SOFTENED
     return proposed_mood
 
 
