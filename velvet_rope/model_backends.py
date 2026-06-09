@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 import os
 import re
@@ -267,63 +267,16 @@ class OpenAICompatibleBackend:
             timeout=self.timeout_seconds,
             headers=headers,
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except Exception as exc:
+            body = getattr(response, "text", "")
+            if body:
+                body = body[:500]
+                raise RuntimeError(f"OpenAI-compatible request failed: {exc}; response body: {body}") from exc
+            raise
         payload = response.json()
         return payload["choices"][0]["message"]["content"]
-
-
-@dataclass
-class LlamaCppPythonBackend:
-    model_path: str
-    chat_format: str = ""
-    n_ctx: int = 4096
-    n_threads: int = 0
-    temperature: float = 0.8
-    _model: Any = field(default=None, init=False, repr=False)
-
-    def generate_turn(
-        self,
-        *,
-        character_prompt: str,
-        history: list[ChatTurn],
-        state_summary: str,
-        player_message: str,
-    ) -> str:
-        model = self._get_model()
-        payload = model.create_chat_completion(
-            messages=_chat_messages(character_prompt, history, state_summary, player_message),
-            temperature=self.temperature,
-            response_format={"type": "json_object"},
-        )
-        return payload["choices"][0]["message"]["content"]
-
-    def _get_model(self) -> Any:
-        if not self.model_path.strip():
-            raise ValueError("Set VELVET_LLAMA_CPP_MODEL_PATH to a GGUF model path before using llama-cpp-python.")
-        if self._model is None:
-            try:
-                llama_class = _load_llama_class()
-            except ModuleNotFoundError as exc:
-                raise RuntimeError(
-                    "Install llama-cpp-python before using VELVET_MODEL_BACKEND=llama-cpp-python."
-                ) from exc
-            kwargs: dict[str, Any] = {
-                "model_path": self.model_path,
-                "n_ctx": self.n_ctx,
-                "verbose": False,
-            }
-            if self.chat_format.strip():
-                kwargs["chat_format"] = self.chat_format
-            if self.n_threads > 0:
-                kwargs["n_threads"] = self.n_threads
-            self._model = llama_class(**kwargs)
-        return self._model
-
-
-def _load_llama_class() -> Any:
-    from llama_cpp import Llama
-
-    return Llama
 
 
 def backend_from_env() -> ModelBackend:
@@ -350,13 +303,6 @@ def backend_from_env() -> ModelBackend:
             temperature=_env_float("VELVET_MODEL_TEMPERATURE", 0.8),
             max_tokens=_env_int("VELVET_MODEL_MAX_TOKENS", 0),
         )
-    if backend in {"llamacpp", "llama-cpp", "llama.cpp", "llama-cpp-python", "llama.cpp-python", "llamacpp-python"}:
-        return LlamaCppPythonBackend(
-            model_path=os.getenv("VELVET_LLAMA_CPP_MODEL_PATH", ""),
-            chat_format=os.getenv("VELVET_LLAMA_CPP_CHAT_FORMAT", ""),
-            n_ctx=_env_int("VELVET_LLAMA_CPP_N_CTX", 4096),
-            n_threads=_env_int("VELVET_LLAMA_CPP_N_THREADS", 0),
-        )
     if backend == "deterministic":
         if _contest_runtime_enabled():
             raise RuntimeError(
@@ -367,7 +313,7 @@ def backend_from_env() -> ModelBackend:
     if _backend_explicitly_configured():
         raise RuntimeError(
             f"Unsupported backend value {backend!r} from {backend_source}. "
-            "Use router, openai-compatible, llamacpp, or deterministic."
+            "Use router, openai-compatible, or deterministic."
         )
     return DeterministicMarloweBackend()
 

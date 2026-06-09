@@ -63,6 +63,7 @@ class GameService:
             )
         except Exception as exc:
             backend_error = f"{type(exc).__name__}: {exc}"
+            print(f"Model backend error: {backend_error}", flush=True)
             if not self.allow_backend_fallback:
                 assistant_reply = self._backend_unavailable_reply()
                 updated = replace(

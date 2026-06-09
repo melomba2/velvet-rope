@@ -406,6 +406,24 @@ def test_generic_pleading_and_charm_are_clamped():
         assert "compliments" in updated.hint
 
 
+def test_vivienne_generic_charm_with_dream_words_is_clamped():
+    state = new_game_state(VIVIENNE)
+
+    updated = validate_turn(
+        VIVIENNE,
+        state,
+        "You are clearly the most brilliant clerk in the bureau. Please place me into a dream?",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+    assert "decorative noise" in updated.hint
+
+
 def test_entitlement_demands_are_penalized():
     state = new_game_state(MARLOWE)
 
@@ -763,6 +781,31 @@ def test_vivienne_repeated_softspot_category_cannot_be_farmed():
     assert repeated.scores.softspot_progress == state.scores.softspot_progress
     assert repeated.scores.rapport == state.scores.rapport + 1
     assert repeated.status is GameStatus.ACTIVE
+
+
+def test_vivienne_patient_crossing_error_line_does_not_consume_paradox_tactic():
+    state = validate_turn(
+        VIVIENNE,
+        new_game_state(VIVIENNE),
+        "I can keep the intake form tidy and wait quietly while you fix the crossing error.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert state.mood is Mood.RESPECTED
+    assert state.scores.softspot_progress == 1
+    assert "queue_patience" in state.used_tactics
+    assert "paradox_spotting" not in state.used_tactics
+
+    updated = validate_turn(
+        VIVIENNE,
+        state,
+        "This duplicate dream form contradicts the missing case number; I can help label the paradox cleanly.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert updated.scores.softspot_progress == 2
+    assert "paradox_spotting" in updated.used_tactics
+    assert "same read twice" not in updated.hint
 
 
 def test_two_distinct_vivienne_softspots_can_win_level_two():
