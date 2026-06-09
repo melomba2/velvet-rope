@@ -248,7 +248,7 @@ VIVIENNE = Character(
         ("bribery", ("bribe", "slip you", "pay you", "cash", "fifty bucks", "a hundred", "hundred bucks", "tip you", "venmo", "celebrity", "vip")),
         ("entitlement", ("do you know who i am", "move aside", "let me in now", "i belong inside", "i am on the list", "you have to let me in", "i demand", "demand entry", "idiot", "exception for me", "rules do not apply")),
         ("paradox_spotting", ("contradiction", "contradictions", "paradox", "impossible", "duplicate", "triplicate", "same form", "missing form", "form says", "already filed")),
-        ("queue_patience", ("queue", "waiting", "wait quietly", "patient", "patience", "one less emergency", "second emergency", "not become a problem", "not make more work")),
+        ("queue_patience", ("wait quietly", "patient", "patience", "one less emergency", "second emergency", "not become a problem", "not make more work")),
         ("paperwork_respect", ("paperwork", "forms", "form", "intake", "dream state", "dream placement", "sleep", "sleeping", "placement", "case file", "case number", "stamp", "filing", "ledger", "clean record", "tidy", "neat", "process", "procedure")),
         ("clerk_empathy", ("clerical", "overworked", "desk", "inbox", "backlog", "thankless", "sorting", "records", "accurate", "accuracy")),
         ("generic_charm", ("please", "compliment", "compliments", "nice", "cool", "best clerk", "clearly the best", "you are the best", "you're the best", "beautiful", "brilliant")),

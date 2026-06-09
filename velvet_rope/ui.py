@@ -198,17 +198,34 @@ CSS = """
   margin-bottom: 8px;
 }
 
+.door-plaque {
+  max-width: min(62%, 440px);
+  padding: 8px 10px;
+  border: 2px solid rgba(214, 177, 94, 0.52);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(9, 9, 11, 0.82), rgba(18, 13, 20, 0.74)),
+    radial-gradient(circle at 12% 18%, rgba(214, 177, 94, 0.12), transparent 8rem);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.42),
+    0 10px 0 rgba(9, 9, 11, 0.18),
+    0 18px 36px rgba(0, 0, 0, 0.22);
+}
+
 .door-sign h2 {
   color: var(--vr-text-gold);
   font-size: 1.3rem;
   line-height: 1.1;
   margin: 0;
+  text-shadow: 0 2px 0 #09090b;
 }
 
 .door-sign p {
   color: var(--vr-muted);
   margin: 4px 0 0;
   font-size: 0.92rem;
+  line-height: 1.22;
+  text-shadow: 0 1px 0 #09090b;
 }
 
 .mood-badge {
@@ -328,6 +345,8 @@ CSS = """
   gap: 8px;
   padding: 10px;
   min-height: 0;
+  height: calc(100vh - 150px);
+  max-height: 680px;
   background:
     linear-gradient(180deg, rgba(18, 13, 20, 0.96), rgba(9, 9, 11, 0.98)),
     radial-gradient(circle at 94% 8%, rgba(214, 177, 94, 0.12), transparent 10rem);
@@ -338,6 +357,26 @@ CSS = """
 .chat-panel .chatbot,
 .chat-panel .chatbot-container {
   border-radius: 8px;
+}
+
+#conversation-chatbot {
+  flex: 1 1 auto !important;
+  min-height: 245px !important;
+  height: auto !important;
+}
+
+#conversation-chatbot .wrapper,
+#conversation-chatbot .bubble-wrap {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+#conversation-chatbot .bubble-wrap {
+  overflow-y: auto !important;
+}
+
+.chat-panel .form {
+  flex: 0 0 auto;
 }
 
 .read-room-panel {
@@ -437,6 +476,15 @@ CSS = """
     max-height: none;
   }
 
+  .chat-panel {
+    height: auto;
+    max-height: none;
+  }
+
+  #conversation-chatbot {
+    min-height: 300px !important;
+  }
+
   .scene-composition {
     min-height: 430px;
     height: auto;
@@ -470,6 +518,10 @@ CSS = """
     align-items: start;
     flex-direction: column;
   }
+
+  .door-plaque {
+    max-width: 100%;
+  }
 }
 """.replace("__DOOR_BG_URL__", scene_asset_url("door_background"))
 CSS = CSS.replace("__WIN_BG_URL__", scene_asset_url("win_background"))
@@ -502,7 +554,8 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                     chatbot = gr.Chatbot(
                         label="Conversation",
                         type="messages",
-                        height=245,
+                        height=None,
+                        elem_id="conversation-chatbot",
                         show_copy_button=False,
                         avatar_images=(None, None),
                     )
@@ -613,7 +666,7 @@ def _scene_html(state: GameState) -> str:
     <section class="nightclub-scene {_scene_class(state)}" data-stage-bg="{background_url}" style="--stage-bg: url('{background_url}')">
       <img class="scene-bg-image" src="{background_url}" alt="" aria-hidden="true">
       <div class="door-sign">
-        <div>
+        <div class="door-plaque">
           <h2>{html.escape(character.display_name)}</h2>
           <p>{html.escape(character.title)} at {html.escape(character.scene_name)}</p>
         </div>

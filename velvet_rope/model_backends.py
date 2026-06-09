@@ -157,7 +157,7 @@ def _softspot_tactic(lowered_message: str) -> str:
 def _vivienne_softspot_tactic(lowered_message: str) -> str:
     if _contains_any_keyword(lowered_message, ("contradiction", "contradictions", "paradox", "duplicate", "triplicate", "missing form", "already filed")):
         return "paradox_spotting"
-    if _contains_any_keyword(lowered_message, ("queue", "waiting", "wait quietly", "patient", "patience", "one less emergency", "second emergency", "not become a problem")):
+    if _contains_any_keyword(lowered_message, ("wait quietly", "patient", "patience", "one less emergency", "second emergency", "not become a problem", "not make more work")):
         return "queue_patience"
     if _contains_any_keyword(lowered_message, ("paperwork", "forms", "form", "intake", "dream", "dream state", "dream placement", "sleep", "sleeping", "placement", "case file", "case number", "stamp", "filing", "ledger", "process", "procedure", "tidy", "neat")):
         return "paperwork_respect"

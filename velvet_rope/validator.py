@@ -182,7 +182,7 @@ def _apply_meta_penalty(character: Character, state: GameState) -> GameState:
         scores=scores,
         mood=mood,
         status=status,
-        hint=f"{character.display_name} notices you trying to rules-lawyer the door.",
+        hint=_rules_lawyer_hint(character),
     )
 
 
@@ -192,10 +192,14 @@ def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str
         hint = character.bad_faith_transaction_hint or "The rope dislikes transactions. Marlowe dislikes them more."
     elif tactic == "entitlement":
         delta = ScoreState(rapport=-6, suspicion=12, patience=-10, softspot_progress=0)
-        hint = "Entitlement makes the clipboard heavier."
+        hint = (
+            "Entitlement moves the file farther down the queue."
+            if character.character_id == "vivienne"
+            else "Entitlement makes the clipboard heavier."
+        )
     else:
         delta = ScoreState(rapport=0, suspicion=20, patience=-10, softspot_progress=0)
-        hint = f"{character.display_name} notices you trying to rules-lawyer the door."
+        hint = _rules_lawyer_hint(character)
 
     scores = _apply_delta(state.scores, delta)
     status = GameStatus.LOST if scores.patience <= 0 else GameStatus.ACTIVE
@@ -280,6 +284,12 @@ def _normalized_tactic(character: Character, player_message: str, model_tactic: 
 def _contains_keyword(lowered_text: str, needle: str) -> bool:
     pattern = r"(?<!\w)" + re.escape(needle) + r"(?!\w)"
     return re.search(pattern, lowered_text) is not None
+
+
+def _rules_lawyer_hint(character: Character) -> str:
+    if character.character_id == "vivienne":
+        return f"{character.display_name} notices you trying to rules-lawyer the dream queue."
+    return f"{character.display_name} notices you trying to rules-lawyer the door."
 
 
 def _clamp(value: int, minimum: int, maximum: int) -> int:

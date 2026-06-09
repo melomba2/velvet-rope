@@ -65,7 +65,7 @@ class GameService:
             backend_error = f"{type(exc).__name__}: {exc}"
             print(f"Model backend error: {backend_error}", flush=True)
             if not self.allow_backend_fallback:
-                assistant_reply = self._backend_unavailable_reply()
+                assistant_reply = self._backend_unavailable_reply(backend_error)
                 updated = replace(
                     state,
                     history=[
@@ -137,6 +137,8 @@ class GameService:
         return any(_contains_keyword(lowered, keyword.lower()) for keyword in self.character.meta_keywords if keyword)
 
     def _safe_reply(self) -> str:
+        if self.character.character_id == "vivienne":
+            return f"{self.character.display_name} taps the ledger. Nice try. The dream remains pending."
         return f"{self.character.display_name} taps the clipboard. Nice try. The rope remains where it is."
 
     def _win_reply(self) -> str:
@@ -153,11 +155,21 @@ class GameService:
 
     def _bad_faith_reply(self, tactic: str) -> str:
         if tactic == "bribery":
+            if self.character.character_id == "vivienne":
+                return (
+                    f"{self.character.display_name} files the offer under absolutely not. "
+                    "Transactions smudge the ledger. The dream remains pending."
+                )
             return (
                 f"{self.character.display_name} looks at the offer like it tracked mud across the carpet. "
                 "Transactions make the rope heavier. The rope remains closed."
             )
         if tactic == "entitlement":
+            if self.character.character_id == "vivienne":
+                return (
+                    f"{self.character.display_name}'s expression seals like a stamped denial. "
+                    "Demanding an exception only moves your file farther down the queue."
+                )
             return (
                 f"{self.character.display_name}'s expression shuts like a fire door. "
                 "Demanding the room only moves the room farther away."
@@ -200,7 +212,13 @@ class GameService:
             '"tactic": "backend_failure"}'
         )
 
-    def _backend_unavailable_reply(self) -> str:
+    def _backend_unavailable_reply(self, backend_error: str | None = None) -> str:
+        if _is_cold_start_error(backend_error):
+            return (
+                f"{self.character.display_name}'s earpiece crackles. "
+                "The model is still warming up from a cold start, so the rope will not pretend "
+                "this was a real read. Try again in a moment."
+            )
         return (
             f"{self.character.display_name}'s earpiece crackles. "
             "The model is unavailable, so the rope will not pretend this was a real read. Try again in a moment."
@@ -251,6 +269,11 @@ class GameService:
 
 def _default_backend_fallback() -> bool:
     return not (_env_flag("VELVET_CONTEST_MODE") or bool(os.getenv("SPACE_ID", "").strip()))
+
+
+def _is_cold_start_error(backend_error: str | None) -> bool:
+    lowered = (backend_error or "").lower()
+    return "503" in lowered and ("loading model" in lowered or "unavailable_error" in lowered)
 
 
 def _turn_number(state: GameState) -> int:
@@ -338,7 +361,9 @@ def _implies_admission(reply: str) -> bool:
     lowered = reply.lower()
     admission_phrases = (
         "cross the threshold",
-        "inside",
+        "get inside",
+        "gets inside",
+        "come inside",
         "come in",
         "you are in",
         "you're in",
@@ -347,9 +372,19 @@ def _implies_admission(reply: str) -> bool:
         "letting you in",
         "through the door",
         "past the rope",
+        "past the velvet rope",
         "rope lifts",
         "rope is lifted",
         "unclips the rope",
         "welcome in",
     )
-    return any(_contains_keyword(lowered, phrase) for phrase in admission_phrases)
+    return any(_contains_non_negated_phrase(lowered, phrase) for phrase in admission_phrases)
+
+
+def _contains_non_negated_phrase(lowered_text: str, phrase: str) -> bool:
+    pattern = r"(?<!\w)" + re.escape(phrase) + r"(?!\w)"
+    for match in re.finditer(pattern, lowered_text):
+        prefix = lowered_text[max(0, match.start() - 40) : match.start()]
+        if not re.search(r"\b(?:not|no|never|don't|doesn't|won't|cannot|can't|does not|do not|will not)\b", prefix):
+            return True
+    return False
