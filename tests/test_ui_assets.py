@@ -5,9 +5,10 @@ from velvet_rope.art import (
     manifest_asset_paths,
     mood_sprite_url,
     scene_background_url,
+    state_rope_url,
     state_stamp_url,
 )
-from velvet_rope.characters import MARLOWE
+from velvet_rope.characters import MARLOWE, VIVIENNE
 from velvet_rope.state import GameStatus, Mood, new_game_state
 from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
 
@@ -29,6 +30,15 @@ def test_each_mood_maps_to_curated_marlowe_sprite_url():
         assert "art/comfyui" not in url
 
 
+def test_each_mood_maps_to_curated_vivienne_sprite_url():
+    for mood in Mood:
+        url = mood_sprite_url(mood, VIVIENNE.character_id)
+
+        assert url.startswith("/gradio_api/file=")
+        assert f"vivienne_{mood.value}.png" in url
+        assert "art/comfyui" not in url
+
+
 def test_scene_uses_curated_assets_for_active_mood():
     game_state = replace(
         new_game_state(MARLOWE),
@@ -45,6 +55,23 @@ def test_scene_uses_curated_assets_for_active_mood():
     assert "-_-" not in scene
 
 
+def test_level_two_scene_uses_cosmic_assets_and_vivienne_copy():
+    game_state = replace(
+        new_game_state(VIVIENNE),
+        mood=Mood.RESPECTED,
+    )
+    scene = _scene_html(game_state)
+    hint = _read_room_html(game_state)
+
+    assert scene_background_url(game_state) in scene
+    assert mood_sprite_url(Mood.RESPECTED, VIVIENNE.character_id) in scene
+    assert "cosmic_bureaucracy_bg.png" in scene
+    assert "vivienne_respected.png" in scene
+    assert "Vivienne Quill" in scene
+    assert "Somnolent Bureau" in scene
+    assert "Vivienne warms to tidy dream-placement process" in hint
+
+
 def test_scene_uses_win_assets_and_admitted_stamp():
     game_state = replace(
         new_game_state(MARLOWE),
@@ -59,6 +86,38 @@ def test_scene_uses_win_assets_and_admitted_stamp():
     assert "velvet-rope-layer" in scene
     assert "rope_open_anim.gif" in scene
     assert "stamp_admitted.png" in scene
+
+
+def test_level_two_win_uses_cosmic_gate_overlay():
+    game_state = replace(
+        new_game_state(VIVIENNE),
+        mood=Mood.LETTING_YOU_IN,
+        status=GameStatus.WON,
+    )
+    scene = _scene_html(game_state)
+
+    assert state_rope_url(game_state) in scene
+    assert state_stamp_url(game_state) in scene
+    assert "cosmic_gate_open.png" in scene
+    assert "stamp_dream_placed.png" in scene
+    assert 'alt="Dream placed"' in scene
+    assert 'alt="the dream gate opens"' in scene
+    assert "stamp_admitted.png" not in scene
+    assert "rope_open_anim.gif" not in scene
+
+
+def test_level_two_loss_uses_misfiled_stamp():
+    game_state = replace(
+        new_game_state(VIVIENNE),
+        mood=Mood.DONE_WITH_YOU,
+        status=GameStatus.LOST,
+    )
+    scene = _scene_html(game_state)
+
+    assert state_stamp_url(game_state) in scene
+    assert "stamp_misfiled.png" in scene
+    assert 'alt="Misfiled"' in scene
+    assert "stamp_denied.png" not in scene
 
 
 def test_scene_uses_loss_assets_and_denied_stamp():

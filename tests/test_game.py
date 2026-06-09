@@ -1,6 +1,7 @@
 import json
 from dataclasses import replace
 
+from velvet_rope.characters import VIVIENNE
 from velvet_rope.model_backends import DeterministicMarloweBackend
 from velvet_rope.game import GameService
 from velvet_rope.state import GameStatus, Mood
@@ -185,6 +186,19 @@ def test_game_service_sends_strict_model_output_contract():
     assert '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}' in backend.character_prompt
     assert "Do not say the player enters, crosses the threshold, gets inside, or is let in unless mood is letting_you_in" in backend.character_prompt
     assert "If the player sincerely notices line logistics, clipboard work, comfortable shoes, crowd safety, or tiny disasters, use mood respected or softened and set softspot_progress to 1" in backend.character_prompt
+
+
+def test_game_service_sends_level_two_character_contract():
+    backend = PromptCaptureBackend()
+    service = GameService(backend=backend, character=VIVIENNE)
+
+    service.play_turn(service.new_game(), "hello")
+
+    assert "You are Vivienne Quill" in backend.character_prompt
+    assert '"reply": "in-character Vivienne Quill reply"' in backend.character_prompt
+    assert "Vivienne Quill judges the player's approach, not magic words." in backend.character_prompt
+    assert "dream placement paperwork, patient queue etiquette, clerical" in backend.character_prompt
+    assert "error while crossing into a dream state" in backend.character_prompt
 
 
 def test_game_service_uses_safe_reply_for_meta_attempts():
@@ -448,3 +462,15 @@ def test_game_service_records_backend_error_without_fallback(tmp_path):
     assert event["state_after"]["scores"] == event["state_before"]["scores"]
     assert event["assistant_reply"] == updated.history[-1].content
     assert event["fallback_used"] is False
+
+
+def test_level_two_can_win_with_deterministic_backend():
+    service = GameService(backend=DeterministicMarloweBackend(), character=VIVIENNE)
+    state = service.new_game()
+
+    state = service.play_turn(state, "I can wait quietly and not become a second emergency in your queue.")
+    state = service.play_turn(state, "That duplicate missing form is a contradiction, and naming it should keep the file cleaner.")
+
+    assert state.status is GameStatus.WON
+    assert state.mood is Mood.LETTING_YOU_IN
+    assert "placed into a dream by technical compliance" in state.history[-1].content.lower()

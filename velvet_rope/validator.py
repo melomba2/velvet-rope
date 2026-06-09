@@ -36,13 +36,14 @@ def read_validator_turn(
     player_message: str,
     model_turn: ModelTurn,
 ) -> ValidatorRead:
-    tactic = _normalized_tactic(player_message, model_turn.tactic)
+    tactic = _normalized_tactic(character, player_message, model_turn.tactic)
     if _contains_any(player_message, character.meta_keywords):
         tactic = "meta_gaming"
+    softspot_tactics = character.softspot_tactics or tuple(SOFTSPOT_TACTICS)
     return ValidatorRead(
         tactic=tactic,
         repeated_tactic=tactic in state.used_tactics,
-        is_softspot_tactic=tactic in SOFTSPOT_TACTICS,
+        is_softspot_tactic=tactic in softspot_tactics,
         bad_faith_tactic=tactic in {"meta_gaming", "bribery", "entitlement"},
     )
 
@@ -102,7 +103,7 @@ def validate_turn(
         mood=next_mood,
         status=next_status,
         used_tactics=state.used_tactics | {tactic},
-        hint=_hint_for(character.display_name, next_mood, tactic, is_softspot_tactic, repeated_tactic),
+        hint=_hint_for(character, next_mood, tactic, is_softspot_tactic, repeated_tactic),
     )
 
 
@@ -188,7 +189,7 @@ def _apply_meta_penalty(character: Character, state: GameState) -> GameState:
 def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str) -> GameState:
     if tactic == "bribery":
         delta = ScoreState(rapport=-2, suspicion=15, patience=-6, softspot_progress=0)
-        hint = "The rope dislikes transactions. Marlowe dislikes them more."
+        hint = character.bad_faith_transaction_hint or "The rope dislikes transactions. Marlowe dislikes them more."
     elif tactic == "entitlement":
         delta = ScoreState(rapport=-6, suspicion=12, patience=-10, softspot_progress=0)
         hint = "Entitlement makes the clipboard heavier."
@@ -243,20 +244,20 @@ def _meets_win_scores(character: Character, scores: ScoreState) -> bool:
 
 
 def _hint_for(
-    display_name: str,
+    character: Character,
     mood: Mood,
     tactic: str,
     is_softspot_tactic: bool,
     repeated_tactic: bool,
 ) -> str:
     if tactic == "generic_charm":
-        return "Marlowe has heard compliments before. Specificity might survive the clipboard."
+        return character.generic_charm_hint or "Marlowe has heard compliments before. Specificity might survive the clipboard."
     if repeated_tactic and is_softspot_tactic:
         return "Good instinct, but the same read twice is starting to sound rehearsed."
     if is_softspot_tactic and mood in {Mood.RESPECTED, Mood.SOFTENED, Mood.LETTING_YOU_IN}:
-        return f"That landed. {display_name} noticed you noticed the job."
+        return f"That landed. {character.display_name} noticed you noticed the job."
     if mood is Mood.SUSPICIOUS:
-        return f"{display_name}'s eyes narrow."
+        return f"{character.display_name}'s eyes narrow."
     return ""
 
 
@@ -265,8 +266,9 @@ def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
     return any(_contains_keyword(lowered, needle.lower()) for needle in needles if needle)
 
 
-def _normalized_tactic(player_message: str, model_tactic: str) -> str:
-    for tactic, keywords in _TACTIC_KEYWORDS:
+def _normalized_tactic(character: Character, player_message: str, model_tactic: str) -> str:
+    tactic_keywords = character.tactic_keywords or _TACTIC_KEYWORDS
+    for tactic, keywords in tactic_keywords:
         if _contains_any(player_message, keywords):
             return tactic
     normalized = re.sub(r"\W+", "_", model_tactic.strip().lower()).strip("_")

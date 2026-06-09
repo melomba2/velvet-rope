@@ -16,10 +16,31 @@
     "letting_you_in": "sprites/marlowe_letting_you_in.png",
     "done_with_you": "sprites/marlowe_done_with_you.png"
   },
+  "vivienne_sprites": {
+    "unimpressed": "sprites/vivienne_unimpressed.png",
+    "suspicious": "sprites/vivienne_suspicious.png",
+    "amused": "sprites/vivienne_amused.png",
+    "respected": "sprites/vivienne_respected.png",
+    "softened": "sprites/vivienne_softened.png",
+    "letting_you_in": "sprites/vivienne_letting_you_in.png",
+    "done_with_you": "sprites/vivienne_done_with_you.png"
+  },
   "scene_assets": {
     "door_background": "assets/door_bg.png",
     "win_background": "assets/state_win_bg.png",
     "loss_background": "assets/state_loss_bg.png"
+  },
+  "character_scene_assets": {
+    "marlowe": {
+      "door_background": "assets/door_bg.png",
+      "win_background": "assets/state_win_bg.png",
+      "loss_background": "assets/state_loss_bg.png"
+    },
+    "vivienne": {
+      "door_background": "assets/cosmic_bureaucracy_bg.png",
+      "win_background": "assets/cosmic_bureaucracy_win_bg.png",
+      "loss_background": "assets/cosmic_bureaucracy_loss_bg.png"
+    }
   },
   "rope_assets": {
     "closed": "assets/rope_closed.png",
@@ -27,12 +48,36 @@
     "open": "assets/rope_open.png",
     "open_animation": "assets/rope_open_anim.gif"
   },
+  "character_rope_assets": {
+    "marlowe": {
+      "closed": "assets/rope_closed.png",
+      "tension": "assets/rope_tension.png",
+      "open": "assets/rope_open.png",
+      "open_animation": "assets/rope_open_anim.gif"
+    },
+    "vivienne": {
+      "closed": "assets/rope_closed.png",
+      "tension": "assets/rope_tension.png",
+      "open": "assets/cosmic_gate_open.png",
+      "open_animation": "assets/cosmic_gate_open.png"
+    }
+  },
   "ui_assets": {
     "speech_bubble": "assets/speech_bubble.png",
     "mood_badge": "assets/mood_badge.png",
     "button": "assets/ui_button.png",
     "stamp_admitted": "assets/stamp_admitted.png",
     "stamp_denied": "assets/stamp_denied.png"
+  },
+  "character_ui_assets": {
+    "marlowe": {
+      "stamp_admitted": "assets/stamp_admitted.png",
+      "stamp_denied": "assets/stamp_denied.png"
+    },
+    "vivienne": {
+      "stamp_admitted": "assets/stamp_dream_placed.png",
+      "stamp_denied": "assets/stamp_misfiled.png"
+    }
   },
   "icons": {
     "clipboard": "assets/icon_clipboard.png",

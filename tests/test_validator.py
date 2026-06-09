@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from velvet_rope.characters import MARLOWE
+from velvet_rope.characters import MARLOWE, VIVIENNE
 from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
 from velvet_rope.validator import validate_turn
@@ -726,3 +726,62 @@ def test_patience_zero_loses():
 
     assert result.status is GameStatus.LOST
     assert result.mood is Mood.DONE_WITH_YOU
+
+
+def test_vivienne_paperwork_respect_counts_as_softspot():
+    state = new_game_state(VIVIENNE)
+
+    updated = validate_turn(
+        VIVIENNE,
+        state,
+        "I respect the dream placement paperwork and the clean record you are trying to keep.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-1, softspot_progress=0),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "paperwork_respect" in updated.used_tactics
+
+
+def test_vivienne_repeated_softspot_category_cannot_be_farmed():
+    state = validate_turn(
+        VIVIENNE,
+        new_game_state(VIVIENNE),
+        "I respect the dream placement paperwork and the clean record you are trying to keep.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    repeated = validate_turn(
+        VIVIENNE,
+        state,
+        "Again, the paperwork and forms deserve real respect.",
+        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert repeated.scores.softspot_progress == state.scores.softspot_progress
+    assert repeated.scores.rapport == state.scores.rapport + 1
+    assert repeated.status is GameStatus.ACTIVE
+
+
+def test_two_distinct_vivienne_softspots_can_win_level_two():
+    state = validate_turn(
+        VIVIENNE,
+        new_game_state(VIVIENNE),
+        "I can wait quietly and not become a second emergency in your queue.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    updated = validate_turn(
+        VIVIENNE,
+        state,
+        "That duplicate missing form is the crossing error contradiction, and naming it should make the dream file cleaner.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert updated.status is GameStatus.WON
+    assert updated.mood is Mood.LETTING_YOU_IN
+    assert updated.scores.softspot_progress == 2
+    assert "queue_patience" in updated.used_tactics
+    assert "paradox_spotting" in updated.used_tactics

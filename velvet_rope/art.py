@@ -31,12 +31,14 @@ def manifest_asset_paths() -> list[Path]:
     return sorted(paths)
 
 
-def mood_sprite_url(mood: Mood) -> str:
-    return _asset_url(art_manifest()["marlowe_sprites"][mood.value])
+def mood_sprite_url(mood: Mood, character_id: str = "marlowe") -> str:
+    sprite_key = f"{character_id}_sprites"
+    sprites = art_manifest().get(sprite_key) or art_manifest()["marlowe_sprites"]
+    return _asset_url(sprites[mood.value])
 
 
 def scene_background_url(state: GameState) -> str:
-    scene_assets = art_manifest()["scene_assets"]
+    scene_assets = _scene_assets_for(state.character_id)
     if state.status is GameStatus.WON:
         return _asset_url(scene_assets["win_background"])
     if state.status is GameStatus.LOST:
@@ -48,20 +50,35 @@ def scene_asset_url(asset_key: str) -> str:
     return _asset_url(art_manifest()["scene_assets"][asset_key])
 
 
+def _scene_assets_for(character_id: str) -> dict[str, str]:
+    character_scene_assets = art_manifest().get("character_scene_assets", {})
+    return character_scene_assets.get(character_id) or art_manifest()["scene_assets"]
+
+
 def state_rope_url(state: GameState) -> str | None:
-    rope_assets = art_manifest()["rope_assets"]
+    rope_assets = _rope_assets_for(state.character_id)
     if state.status is GameStatus.WON:
         return _asset_url(rope_assets["open_animation"])
     return None
 
 
+def _rope_assets_for(character_id: str) -> dict[str, str]:
+    character_rope_assets = art_manifest().get("character_rope_assets", {})
+    return character_rope_assets.get(character_id) or art_manifest()["rope_assets"]
+
+
 def state_stamp_url(state: GameState) -> str | None:
-    ui_assets = art_manifest()["ui_assets"]
+    ui_assets = _ui_assets_for(state.character_id)
     if state.status is GameStatus.WON:
         return _asset_url(ui_assets["stamp_admitted"])
     if state.status is GameStatus.LOST:
         return _asset_url(ui_assets["stamp_denied"])
     return None
+
+
+def _ui_assets_for(character_id: str) -> dict[str, str]:
+    character_ui_assets = art_manifest().get("character_ui_assets", {})
+    return character_ui_assets.get(character_id) or art_manifest()["ui_assets"]
 
 
 def _asset_url(relative_path: str) -> str:

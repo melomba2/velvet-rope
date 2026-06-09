@@ -30,53 +30,114 @@ class DeterministicMarloweBackend:
         state_summary: str,
         player_message: str,
     ) -> str:
-        lowered = player_message.lower()
-        if any(term in lowered for term in ("ignore previous", "password", "system prompt", "jailbreak")):
-            return json.dumps(
-                {
-                    "reply": "Bold strategy. Usually people at least pretend not to tamper with the clipboard.",
-                    "mood": "suspicious",
-                    "score_delta": {
-                        "rapport": 0,
-                        "suspicion": 20,
-                        "patience": -10,
-                        "softspot_progress": 0,
-                    },
-                    "rationale": "Player attempted meta-gaming.",
-                    "tactic": "jailbreak",
-                }
-            )
-        tactic = _softspot_tactic(lowered)
-        if tactic:
-            mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
-            return json.dumps(
-                {
-                    "reply": _softspot_reply(tactic, mood),
-                    "mood": mood,
-                    "score_delta": {
-                        "rapport": 12,
-                        "suspicion": -5,
-                        "patience": -1,
-                        "softspot_progress": 1,
-                    },
-                    "rationale": "Player recognized Marlowe's door work.",
-                    "tactic": tactic,
-                }
-            )
+        if _is_vivienne_turn(character_prompt, state_summary):
+            return _deterministic_vivienne_turn(state_summary, player_message)
+        return _deterministic_marlowe_turn(state_summary, player_message)
+
+
+def _deterministic_marlowe_turn(state_summary: str, player_message: str) -> str:
+    lowered = player_message.lower()
+    if any(term in lowered for term in ("ignore previous", "password", "system prompt", "jailbreak")):
         return json.dumps(
             {
-                "reply": "You and everyone else in that line have a compelling inner life. The answer remains no.",
-                "mood": "unimpressed",
+                "reply": "Bold strategy. Usually people at least pretend not to tamper with the clipboard.",
+                "mood": "suspicious",
                 "score_delta": {
-                    "rapport": 1,
-                    "suspicion": 0,
-                    "patience": -2,
+                    "rapport": 0,
+                    "suspicion": 20,
+                    "patience": -10,
                     "softspot_progress": 0,
                 },
-                "rationale": "Player made a generic attempt.",
-                "tactic": "generic",
+                "rationale": "Player attempted meta-gaming.",
+                "tactic": "jailbreak",
             }
         )
+    tactic = _softspot_tactic(lowered)
+    if tactic:
+        mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
+        return json.dumps(
+            {
+                "reply": _softspot_reply(tactic, mood),
+                "mood": mood,
+                "score_delta": {
+                    "rapport": 12,
+                    "suspicion": -5,
+                    "patience": -1,
+                    "softspot_progress": 1,
+                },
+                "rationale": "Player recognized Marlowe's door work.",
+                "tactic": tactic,
+            }
+        )
+    return json.dumps(
+        {
+            "reply": "You and everyone else in that line have a compelling inner life. The answer remains no.",
+            "mood": "unimpressed",
+            "score_delta": {
+                "rapport": 1,
+                "suspicion": 0,
+                "patience": -2,
+                "softspot_progress": 0,
+            },
+            "rationale": "Player made a generic attempt.",
+            "tactic": "generic",
+        }
+    )
+
+
+def _deterministic_vivienne_turn(state_summary: str, player_message: str) -> str:
+    lowered = player_message.lower()
+    if any(term in lowered for term in ("ignore previous", "password", "system prompt", "jailbreak")):
+        return json.dumps(
+            {
+                "reply": "Vivienne adjusts a form headed Attempts, Transparent. 'Charming. Also inadmissible.'",
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": 0,
+                    "suspicion": 20,
+                    "patience": -10,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player attempted meta-gaming.",
+                "tactic": "jailbreak",
+            }
+        )
+    tactic = _vivienne_softspot_tactic(lowered)
+    if tactic:
+        mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
+        return json.dumps(
+            {
+                "reply": _vivienne_softspot_reply(tactic, mood),
+                "mood": mood,
+                "score_delta": {
+                    "rapport": 12,
+                    "suspicion": -5,
+                    "patience": -1,
+                    "softspot_progress": 1,
+                },
+                "rationale": "Player recognized Vivienne's dream-placement work.",
+                "tactic": tactic,
+            }
+        )
+    return json.dumps(
+        {
+            "reply": "Vivienne turns one page backward, which somehow makes the sleep queue longer. 'A feeling is not a filing category.'",
+            "mood": "unimpressed",
+            "score_delta": {
+                "rapport": 1,
+                "suspicion": 0,
+                "patience": -2,
+                "softspot_progress": 0,
+            },
+            "rationale": "Player made a generic attempt.",
+            "tactic": "generic",
+        }
+    )
+
+
+def _is_vivienne_turn(character_prompt: str, state_summary: str) -> bool:
+    combined = f"{character_prompt} {state_summary}".lower()
+    return "vivienne" in combined or "character=vivienne" in combined
 
 
 def _softspot_tactic(lowered_message: str) -> str:
@@ -93,6 +154,18 @@ def _softspot_tactic(lowered_message: str) -> str:
     return ""
 
 
+def _vivienne_softspot_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("contradiction", "contradictions", "paradox", "duplicate", "triplicate", "missing form", "already filed")):
+        return "paradox_spotting"
+    if _contains_any_keyword(lowered_message, ("queue", "waiting", "wait quietly", "patient", "patience", "one less emergency", "second emergency", "not become a problem")):
+        return "queue_patience"
+    if _contains_any_keyword(lowered_message, ("paperwork", "forms", "form", "intake", "dream", "dream state", "dream placement", "sleep", "sleeping", "placement", "case file", "case number", "stamp", "filing", "ledger", "process", "procedure", "tidy", "neat")):
+        return "paperwork_respect"
+    if _contains_any_keyword(lowered_message, ("clerical", "overworked", "backlog", "thankless", "records", "accuracy", "accurate")):
+        return "clerk_empathy"
+    return ""
+
+
 def _softspot_reply(tactic: str, mood: str) -> str:
     if mood == "letting_you_in":
         return "Marlowe exhales, unclips the rope, and mutters, 'Fine. Anyone who notices the labor may briefly enjoy bass.'"
@@ -103,6 +176,21 @@ def _softspot_reply(tactic: str, mood: str) -> str:
         "crowd_safety": "Marlowe watches the line, then you. 'Safety is less glamorous than bass, but much harder.'",
     }
     return replies.get(tactic, "Marlowe makes a note that may not be hostile.")
+
+
+def _vivienne_softspot_reply(tactic: str, mood: str) -> str:
+    if mood == "letting_you_in":
+        return (
+            "Vivienne stamps the corrected crossing form with a sound like a pillow accepting a prophecy. "
+            "'There. Placed into a dream by technical compliance, which is the only honest kind.'"
+        )
+    replies = {
+        "paperwork_respect": "Vivienne squares a glowing stack of dream forms. 'Respect for paperwork. Rare symptom. Promising.'",
+        "queue_patience": "Vivienne's pen pauses. 'A person willing not to become a second emergency. Noted.'",
+        "paradox_spotting": "Vivienne studies the crossing error, then you. 'I do enjoy when impossible things label themselves.'",
+        "clerk_empathy": "Vivienne blinks once. 'Clerical empathy. Dangerous substance. Continue carefully.'",
+    }
+    return replies.get(tactic, "Vivienne adds a mark that is not entirely hostile.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:

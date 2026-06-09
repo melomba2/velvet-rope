@@ -12,7 +12,7 @@ from velvet_rope.art import (
     state_rope_url,
     state_stamp_url,
 )
-from velvet_rope.characters import MARLOWE
+from velvet_rope.characters import MARLOWE, PLAYABLE_CHARACTERS, character_for_id
 from velvet_rope.game import GameService
 from velvet_rope.state import GameState, GameStatus, Mood
 
@@ -135,7 +135,7 @@ CSS = """
   background:
     linear-gradient(90deg, rgba(179, 39, 53, 0.22), transparent 26%, transparent 74%, rgba(214, 177, 94, 0.2)),
     linear-gradient(180deg, rgba(9, 9, 11, 0.08), rgba(9, 9, 11, 0.58)),
-    url("__DOOR_BG_URL__");
+    var(--stage-bg, url("__DOOR_BG_URL__"));
   background-position: center;
   background-size: cover;
   image-rendering: pixelated;
@@ -146,9 +146,20 @@ CSS = """
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   background: rgba(9, 9, 11, 0.2);
   pointer-events: none;
+}
+
+.scene-bg-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .nightclub-scene.is-won::before {
@@ -159,7 +170,7 @@ CSS = """
   background:
     linear-gradient(90deg, rgba(79, 143, 115, 0.2), transparent 30%, transparent 70%, rgba(214, 177, 94, 0.18)),
     linear-gradient(180deg, rgba(9, 9, 11, 0.02), rgba(9, 9, 11, 0.38)),
-    url("__WIN_BG_URL__");
+    var(--stage-bg, url("__WIN_BG_URL__"));
   background-position: center;
   background-size: cover;
 }
@@ -172,12 +183,14 @@ CSS = """
   background:
     linear-gradient(90deg, rgba(179, 39, 53, 0.22), transparent 30%, transparent 70%, rgba(9, 9, 11, 0.32)),
     linear-gradient(180deg, rgba(9, 9, 11, 0.14), rgba(9, 9, 11, 0.62)),
-    url("__LOSS_BG_URL__");
+    var(--stage-bg, url("__LOSS_BG_URL__"));
   background-position: center;
   background-size: cover;
 }
 
 .door-sign {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -223,6 +236,7 @@ CSS = """
 
 .scene-composition {
   position: relative;
+  z-index: 1;
   min-height: 0;
   height: calc(100% - 52px);
   margin-top: 6px;
@@ -464,19 +478,20 @@ CSS = CSS.replace("__LOSS_BG_URL__", scene_asset_url("loss_background"))
 
 def build_app(service: GameService | None = None) -> gr.Blocks:
     service = service or GameService()
+    services = _services_for_levels(service)
     configure_gradio_static_paths(gr)
 
     with gr.Blocks(css=CSS, title="Velvet Rope", theme=gr.themes.Base()) as app:
-        state = gr.State(service.new_game())
+        state = gr.State(services[MARLOWE.character_id].new_game())
 
         with gr.Column(elem_id="velvet-app"):
             with gr.Row(equal_height=False, elem_classes=["velvet-header"]):
                 gr.HTML(_header_html())
                 with gr.Column(min_width=230, elem_classes=["level-select-card"]):
-                    gr.Dropdown(
+                    level = gr.Dropdown(
                         label="Level",
-                        choices=["Level 1 · Nightclub Door"],
-                        value="Level 1 · Nightclub Door",
+                        choices=[character.level_label for character in PLAYABLE_CHARACTERS],
+                        value=MARLOWE.level_label,
                         interactive=True,
                     )
             with gr.Row(equal_height=False, elem_classes=["play-shell"]):
@@ -492,8 +507,8 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                         avatar_images=(None, None),
                     )
                     player_input = gr.Textbox(
-                        label="Say something to Marlowe",
-                        placeholder="Try a specific read, not generic charm.",
+                        label=MARLOWE.input_label,
+                        placeholder=MARLOWE.input_placeholder,
                         lines=1,
                         max_lines=1,
                     )
@@ -512,16 +527,32 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
             if not cleaned:
                 scene_html, hint_html, messages = render(current)
                 return current, scene_html, hint_html, messages, ""
-            updated = service.play_turn(current, cleaned)
+            updated = _service_for_state(services, current).play_turn(current, cleaned)
             scene_html, hint_html, messages = render(updated)
             return updated, scene_html, hint_html, messages, ""
 
-        def restart() -> tuple[GameState, str, str, list[dict[str, str]], str]:
-            fresh = service.new_game()
+        def restart(current: GameState) -> tuple[GameState, str, str, list[dict[str, str]], str]:
+            fresh = _service_for_state(services, current).new_game()
             scene_html, hint_html, messages = render(fresh)
             return fresh, scene_html, hint_html, messages, ""
 
+        def select_level(level_label: str) -> tuple[GameState, str, str, list[dict[str, str]], dict]:
+            character = _character_for_level_label(level_label)
+            fresh = services[character.character_id].new_game()
+            scene_html, hint_html, messages = render(fresh)
+            input_update = gr.update(
+                label=character.input_label,
+                placeholder=character.input_placeholder,
+                value="",
+            )
+            return fresh, scene_html, hint_html, messages, input_update
+
         app.load(render, inputs=state, outputs=[scene, read_room, chatbot])
+        level.change(
+            select_level,
+            inputs=level,
+            outputs=[state, scene, read_room, chatbot, player_input],
+        )
         send.click(
             submit,
             inputs=[player_input, state],
@@ -532,9 +563,32 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
             inputs=[player_input, state],
             outputs=[state, scene, read_room, chatbot, player_input],
         )
-        reset.click(restart, outputs=[state, scene, read_room, chatbot, player_input])
+        reset.click(restart, inputs=state, outputs=[state, scene, read_room, chatbot, player_input])
 
     return app
+
+
+def _services_for_levels(service: GameService) -> dict[str, GameService]:
+    return {
+        character.character_id: GameService(
+            backend=service.backend,
+            character=character,
+            allow_backend_fallback=service.allow_backend_fallback,
+            transcript_recorder=service.transcript_recorder,
+        )
+        for character in PLAYABLE_CHARACTERS
+    }
+
+
+def _service_for_state(services: dict[str, GameService], state: GameState) -> GameService:
+    return services.get(state.character_id, services[MARLOWE.character_id])
+
+
+def _character_for_level_label(level_label: str):
+    for character in PLAYABLE_CHARACTERS:
+        if character.level_label == level_label:
+            return character
+    return MARLOWE
 
 
 def _header_html() -> str:
@@ -547,25 +601,27 @@ def _header_html() -> str:
 
 
 def _scene_html(state: GameState) -> str:
+    character = character_for_id(state.character_id)
     mood_label = _mood_label(state.mood)
     status_line = _status_line(state)
     mood_value = html.escape(state.mood.value)
     background_url = html.escape(scene_background_url(state), quote=True)
-    sprite_url = html.escape(mood_sprite_url(state.mood), quote=True)
+    sprite_url = html.escape(mood_sprite_url(state.mood, character.character_id), quote=True)
     stamp_html = _stamp_html(state)
     rope_html = _rope_html(state)
     return f"""
-    <section class="nightclub-scene {_scene_class(state)}" data-stage-bg="{background_url}">
+    <section class="nightclub-scene {_scene_class(state)}" data-stage-bg="{background_url}" style="--stage-bg: url('{background_url}')">
+      <img class="scene-bg-image" src="{background_url}" alt="" aria-hidden="true">
       <div class="door-sign">
         <div>
-          <h2>{html.escape(MARLOWE.display_name)}</h2>
-          <p>{html.escape(MARLOWE.title)} at The Nopelist</p>
+          <h2>{html.escape(character.display_name)}</h2>
+          <p>{html.escape(character.title)} at {html.escape(character.scene_name)}</p>
         </div>
         <div class="mood-badge {mood_value}">Mood: {html.escape(mood_label)}</div>
       </div>
       <div class="scene-composition">
         <div class="marlowe-box">
-          <img class="marlowe-figure" src="{sprite_url}" alt="Marlowe looks {html.escape(mood_label)}">
+          <img class="marlowe-figure" src="{sprite_url}" alt="{html.escape(character.display_name)} looks {html.escape(mood_label)}">
         </div>
         {stamp_html}
         <div class="stage-status">{html.escape(status_line)}</div>
@@ -589,10 +645,11 @@ def _read_room_html(state: GameState) -> str:
 
 
 def _chat_messages(state: GameState) -> list[dict[str, str]]:
+    character = character_for_id(state.character_id)
     messages = [
         {
             "role": "assistant",
-            "content": "Marlowe looks up from the clipboard. The rope waits for your best human attempt.",
+            "content": character.opening_line,
         }
     ]
     messages.extend({"role": turn.role, "content": turn.content} for turn in state.history)
@@ -600,25 +657,27 @@ def _chat_messages(state: GameState) -> list[dict[str, str]]:
 
 
 def _hint_text(state: GameState) -> str:
+    character = character_for_id(state.character_id)
     if state.status is GameStatus.WON:
-        return "The rope lifts. Marlowe has decided you are unusually tolerable."
+        return character.won_hint
     if state.status is GameStatus.LOST:
-        return "Not tonight. Marlowe has found peace in the word no."
+        return character.lost_hint
     if state.hint:
         return state.hint
-    return "Watch the mood. Marlowe responds to specific reads of the job, not generic charm."
+    return character.default_hint
 
 
 def _status_line(state: GameState) -> str:
+    character = character_for_id(state.character_id)
     if state.status is GameStatus.WON:
-        return "Marlowe unclips the rope with the exhausted grace of a person ending a small civic incident."
+        return character.won_status_line
     if state.status is GameStatus.LOST:
-        return "Marlowe points gently but firmly toward anywhere else."
+        return character.lost_status_line
     if state.mood is Mood.SUSPICIOUS:
-        return "The doorway light sharpens. Marlowe is now listening for nonsense."
+        return character.suspicious_status_line
     if state.mood in {Mood.RESPECTED, Mood.SOFTENED}:
-        return "The rope glow warms a little. Marlowe has noticed the specificity."
-    return "The club thumps behind the door. Marlowe waits, unimpressed but technically available."
+        return character.respected_status_line
+    return character.active_status_line
 
 
 def _mood_label(mood: Mood) -> str:
@@ -633,16 +692,23 @@ def _stamp_html(state: GameState) -> str:
     stamp_url = state_stamp_url(state)
     if stamp_url is None:
         return ""
-    label = "Admitted" if state.status is GameStatus.WON else "Denied"
+    label = _stamp_label(state)
     return f'<img class="state-stamp" src="{html.escape(stamp_url, quote=True)}" alt="{label}">'
+
+
+def _stamp_label(state: GameState) -> str:
+    if state.character_id == "vivienne":
+        return "Dream placed" if state.status is GameStatus.WON else "Misfiled"
+    return "Admitted" if state.status is GameStatus.WON else "Denied"
 
 
 def _rope_html(state: GameState) -> str:
     rope_url = state_rope_url(state)
     if rope_url is None:
         return ""
+    label = "the dream gate opens" if state.character_id == "vivienne" else "the velvet rope opens"
     return (
         '<div class="velvet-rope-layer">'
-        f'<img class="velvet-rope-sprite" src="{html.escape(rope_url, quote=True)}" alt="the velvet rope opens">'
+        f'<img class="velvet-rope-sprite" src="{html.escape(rope_url, quote=True)}" alt="{label}">'
         "</div>"
     )

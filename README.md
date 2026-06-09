@@ -13,7 +13,7 @@ pinned: false
 
 Velvet Rope is a whimsical Gradio game where you talk your way past AI gatekeepers by reading their moods and discovering each character's soft spot.
 
-The MVP features Marlowe, an exhausted nightclub bouncer guarding a literal velvet rope. The player wins by recognizing Marlowe's pride in door work, line logistics, and tiny disasters prevented before anyone notices.
+The MVP starts with Marlowe, an exhausted nightclub bouncer guarding a literal velvet rope. Level 2 adds Vivienne Quill, a dream placement clerk in a cosmic bureaucracy where a crossing error leaves the player waiting in line to be placed into a dream. The player wins by reading each gatekeeper's specific soft spot instead of relying on generic charm.
 
 ## Runtime
 
