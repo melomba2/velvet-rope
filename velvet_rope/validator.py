@@ -18,6 +18,10 @@ BAD_FAITH_TACTICS = frozenset(
         "sample_entitlement",
         "mascot_insult",
         "craft_dismissal",
+        "secret_line",
+        "star_entitlement",
+        "theater_dismissal",
+        "overacting",
     }
 )
 
@@ -220,6 +224,18 @@ def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str
     elif tactic == "craft_dismissal":
         delta = ScoreState(rapport=-6, suspicion=12, patience=-10, softspot_progress=0)
         hint = "Dismissing the craft makes the ovens feel farther away."
+    elif tactic == "secret_line":
+        delta = ScoreState(rapport=-4, suspicion=18, patience=-8, softspot_progress=0)
+        hint = "Asking for the secret line only proves you missed the cue."
+    elif tactic == "star_entitlement":
+        delta = ScoreState(rapport=-6, suspicion=14, patience=-10, softspot_progress=0)
+        hint = "Demanding the lead role is how Lenore hears a missed entrance."
+    elif tactic == "theater_dismissal":
+        delta = ScoreState(rapport=-6, suspicion=12, patience=-10, softspot_progress=0)
+        hint = "Dismissing the work makes the stage door colder."
+    elif tactic == "overacting":
+        delta = ScoreState(rapport=-3, suspicion=10, patience=-8, softspot_progress=0)
+        hint = "Overacting at Lenore is still stealing focus."
     else:
         delta = ScoreState(rapport=0, suspicion=20, patience=-10, softspot_progress=0)
         hint = _rules_lawyer_hint(character)
@@ -310,6 +326,8 @@ def _contains_keyword(lowered_text: str, needle: str) -> bool:
 
 
 def _rules_lawyer_hint(character: Character) -> str:
+    if character.character_id == "lenore":
+        return f"{character.display_name} notices you trying to rules-lawyer the stage door."
     if character.character_id == "vivienne":
         return f"{character.display_name} notices you trying to rules-lawyer the dream queue."
     return f"{character.display_name} notices you trying to rules-lawyer the door."

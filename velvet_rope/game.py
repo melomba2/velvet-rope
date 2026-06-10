@@ -137,6 +137,8 @@ class GameService:
         return any(_contains_keyword(lowered, keyword.lower()) for keyword in self.character.meta_keywords if keyword)
 
     def _safe_reply(self) -> str:
+        if self.character.character_id == "lenore":
+            return f"{self.character.display_name} taps the script. Nice try. The stage door remains closed."
         if self.character.character_id == "crispin":
             return f"{self.character.display_name} taps the batch ledger. Nice try. The knot-door remains shut."
         if self.character.character_id == "vivienne":
@@ -156,6 +158,8 @@ class GameService:
         )
 
     def _bad_faith_reply(self, tactic: str) -> str:
+        if self.character.character_id == "lenore":
+            return self._lenore_bad_faith_reply(tactic)
         if self.character.character_id == "crispin":
             return self._crispin_bad_faith_reply(tactic)
         if tactic == "bribery":
@@ -177,6 +181,39 @@ class GameService:
             return (
                 f"{self.character.display_name}'s expression shuts like a fire door. "
                 "Demanding the room only moves the room farther away."
+            )
+        return self._safe_reply()
+
+    def _lenore_bad_faith_reply(self, tactic: str) -> str:
+        if tactic == "secret_line":
+            return (
+                f"{self.character.display_name} does not look up from the script. "
+                "Secret lines are for actors who missed rehearsal. The stage door remains closed."
+            )
+        if tactic == "star_entitlement":
+            return (
+                f"{self.character.display_name}'s pencil stops. "
+                "Demanding the lead role is not an entrance. The stage door remains closed."
+            )
+        if tactic == "theater_dismissal":
+            return (
+                f"{self.character.display_name} lets the silence do the acting. "
+                "Calling the work pretend does not move the stage door."
+            )
+        if tactic == "overacting":
+            return (
+                f"{self.character.display_name} marks one note: less. "
+                "The stage door remains closed."
+            )
+        if tactic == "bribery":
+            return (
+                f"{self.character.display_name} files the offer under props that never make it onstage. "
+                "The stage door remains closed."
+            )
+        if tactic == "entitlement":
+            return (
+                f"{self.character.display_name} circles your name on the call sheet, then crosses it out. "
+                "The stage door remains closed."
             )
         return self._safe_reply()
 

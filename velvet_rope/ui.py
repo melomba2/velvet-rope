@@ -750,6 +750,8 @@ def _stamp_html(state: GameState) -> str:
 
 
 def _stamp_label(state: GameState) -> str:
+    if state.character_id == "lenore":
+        return "Places called" if state.status is GameStatus.WON else "Blackout"
     if state.character_id == "crispin":
         return "Cookie crowned" if state.status is GameStatus.WON else "Crumbled"
     if state.character_id == "vivienne":
@@ -763,6 +765,8 @@ def _rope_html(state: GameState) -> str:
         return ""
     if state.character_id == "crispin":
         label = "the knot-door opens"
+    elif state.character_id == "lenore":
+        label = "the stage door opens"
     elif state.character_id == "vivienne":
         label = "the dream gate opens"
     else:

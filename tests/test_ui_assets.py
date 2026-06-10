@@ -8,7 +8,7 @@ from velvet_rope.art import (
     state_rope_url,
     state_stamp_url,
 )
-from velvet_rope.characters import CRISPIN, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE
+from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE
 from velvet_rope.state import GameStatus, Mood, new_game_state
 from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
 
@@ -48,6 +48,15 @@ def test_each_mood_maps_to_curated_crispin_sprite_url():
         assert "art/comfyui" not in url
 
 
+def test_each_mood_maps_to_curated_lenore_sprite_url():
+    for mood in Mood:
+        url = mood_sprite_url(mood, LENORE.character_id)
+
+        assert url.startswith("/gradio_api/file=")
+        assert f"lenore_{mood.value}.png" in url
+        assert "art/comfyui" not in url
+
+
 def test_level_three_scene_uses_hollow_tree_assets_and_crispin_copy():
     game_state = replace(
         new_game_state(CRISPIN),
@@ -64,6 +73,24 @@ def test_level_three_scene_uses_hollow_tree_assets_and_crispin_copy():
     assert "Crispin Crumbwell" in scene
     assert "Hollow Tree Cookie Works" in scene
     assert "Crispin warms to careful factory reads" in hint
+
+
+def test_level_four_scene_uses_stage_door_assets_and_lenore_copy():
+    game_state = replace(
+        new_game_state(LENORE),
+        mood=Mood.RESPECTED,
+    )
+    scene = _scene_html(game_state)
+    hint = _read_room_html(game_state)
+
+    assert LENORE in PLAYABLE_CHARACTERS
+    assert scene_background_url(game_state) in scene
+    assert mood_sprite_url(Mood.RESPECTED, LENORE.character_id) in scene
+    assert "stage_door_bg.png" in scene
+    assert "lenore_respected.png" in scene
+    assert "Lenore Cue" in scene
+    assert "The Last Curtain" in scene
+    assert "Lenore warms to cue discipline" in hint
 
 
 def test_scene_uses_curated_assets_for_active_mood():
@@ -172,6 +199,31 @@ def test_level_three_win_and_loss_use_cookie_labels():
     assert "stamp_crumbled.png" in lost_scene
     assert "stamp_admitted.png" not in won_scene
     assert "stamp_denied.png" not in lost_scene
+
+
+def test_level_four_win_and_loss_use_stage_labels():
+    won_state = replace(
+        new_game_state(LENORE),
+        mood=Mood.LETTING_YOU_IN,
+        status=GameStatus.WON,
+    )
+    lost_state = replace(
+        new_game_state(LENORE),
+        mood=Mood.DONE_WITH_YOU,
+        status=GameStatus.LOST,
+    )
+
+    won_scene = _scene_html(won_state)
+    lost_scene = _scene_html(lost_state)
+
+    assert 'alt="Places called"' in won_scene
+    assert 'alt="the stage door opens"' in won_scene
+    assert "stage_door_win_bg.png" in won_scene
+    assert "stage_door_open.png" in won_scene
+    assert "stamp_places_called.png" in won_scene
+    assert 'alt="Blackout"' in lost_scene
+    assert "stage_door_loss_bg.png" in lost_scene
+    assert "stamp_blackout.png" in lost_scene
 
 
 def test_scene_uses_loss_assets_and_denied_stamp():

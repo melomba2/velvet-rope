@@ -34,6 +34,15 @@
     "letting_you_in": "sprites/crispin_letting_you_in.png",
     "done_with_you": "sprites/crispin_done_with_you.png"
   },
+  "lenore_sprites": {
+    "unimpressed": "sprites/lenore_unimpressed.png",
+    "suspicious": "sprites/lenore_suspicious.png",
+    "amused": "sprites/lenore_amused.png",
+    "respected": "sprites/lenore_respected.png",
+    "softened": "sprites/lenore_softened.png",
+    "letting_you_in": "sprites/lenore_letting_you_in.png",
+    "done_with_you": "sprites/lenore_done_with_you.png"
+  },
   "scene_assets": {
     "door_background": "assets/door_bg.png",
     "win_background": "assets/state_win_bg.png",
@@ -54,6 +63,11 @@
       "door_background": "assets/hollow_tree_factory_bg.png",
       "win_background": "assets/hollow_tree_factory_win_bg.png",
       "loss_background": "assets/hollow_tree_factory_loss_bg.png"
+    },
+    "lenore": {
+      "door_background": "assets/stage_door_bg.png",
+      "win_background": "assets/stage_door_win_bg.png",
+      "loss_background": "assets/stage_door_loss_bg.png"
     }
   },
   "rope_assets": {
@@ -80,6 +94,12 @@
       "tension": "assets/tree_knot_door_tension.png",
       "open": "assets/tree_knot_door_open.png",
       "open_animation": "assets/tree_knot_door_open.png"
+    },
+    "lenore": {
+      "closed": "assets/stage_door_bg.png",
+      "tension": "assets/stage_door_bg.png",
+      "open": "assets/stage_door_open.png",
+      "open_animation": "assets/stage_door_open.png"
     }
   },
   "ui_assets": {
@@ -101,6 +121,10 @@
     "crispin": {
       "stamp_admitted": "assets/stamp_cookie_crowned.png",
       "stamp_denied": "assets/stamp_crumbled.png"
+    },
+    "lenore": {
+      "stamp_admitted": "assets/stamp_places_called.png",
+      "stamp_denied": "assets/stamp_blackout.png"
     }
   },
   "icons": {

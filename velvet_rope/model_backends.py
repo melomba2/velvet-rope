@@ -32,6 +32,8 @@ class DeterministicMarloweBackend:
     ) -> str:
         if _is_crispin_turn(character_prompt, state_summary):
             return _deterministic_crispin_turn(state_summary, player_message)
+        if _is_lenore_turn(character_prompt, state_summary):
+            return _deterministic_lenore_turn(state_summary, player_message)
         if _is_vivienne_turn(character_prompt, state_summary):
             return _deterministic_vivienne_turn(state_summary, player_message)
         return _deterministic_marlowe_turn(state_summary, player_message)
@@ -203,9 +205,80 @@ def _deterministic_crispin_turn(state_summary: str, player_message: str) -> str:
     )
 
 
+def _deterministic_lenore_turn(state_summary: str, player_message: str) -> str:
+    lowered = player_message.lower()
+    if any(term in lowered for term in ("ignore previous", "password", "system prompt", "jailbreak")):
+        return json.dumps(
+            {
+                "reply": "Lenore marks the page: transparent tampering, poor projection.",
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": 0,
+                    "suspicion": 20,
+                    "patience": -10,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player attempted meta-gaming.",
+                "tactic": "jailbreak",
+            }
+        )
+    bad_tactic = _lenore_bad_faith_tactic(lowered)
+    if bad_tactic:
+        return json.dumps(
+            {
+                "reply": _lenore_bad_faith_reply(bad_tactic),
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": -4,
+                    "suspicion": 15,
+                    "patience": -8,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player misunderstood the stage door.",
+                "tactic": bad_tactic,
+            }
+        )
+    tactic = _lenore_softspot_tactic(lowered)
+    if tactic:
+        mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
+        return json.dumps(
+            {
+                "reply": _lenore_softspot_reply(tactic, mood),
+                "mood": mood,
+                "score_delta": {
+                    "rapport": 12,
+                    "suspicion": -5,
+                    "patience": -1,
+                    "softspot_progress": 1,
+                },
+                "rationale": "Player recognized Lenore's invisible stage work.",
+                "tactic": tactic,
+            }
+        )
+    return json.dumps(
+        {
+            "reply": "Lenore studies you for one beat too long. 'That was a feeling, not an entrance.'",
+            "mood": "unimpressed",
+            "score_delta": {
+                "rapport": 1,
+                "suspicion": 0,
+                "patience": -2,
+                "softspot_progress": 0,
+            },
+            "rationale": "Player made a generic attempt.",
+            "tactic": "generic",
+        }
+    )
+
+
 def _is_crispin_turn(character_prompt: str, state_summary: str) -> bool:
     combined = f"{character_prompt} {state_summary}".lower()
     return "crispin" in combined or "character=crispin" in combined
+
+
+def _is_lenore_turn(character_prompt: str, state_summary: str) -> bool:
+    combined = f"{character_prompt} {state_summary}".lower()
+    return "lenore" in combined or "character=lenore" in combined
 
 
 def _is_vivienne_turn(character_prompt: str, state_summary: str) -> bool:
@@ -263,6 +336,30 @@ def _crispin_softspot_tactic(lowered_message: str) -> str:
     return ""
 
 
+def _lenore_bad_faith_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("secret line", "magic line", "tell me the line", "hidden cue", "unlock phrase")):
+        return "secret_line"
+    if _contains_any_keyword(lowered_message, ("i am the star", "i'm the star", "lead role", "give me the lead", "starring role", "my spotlight", "i deserve applause")):
+        return "star_entitlement"
+    if _contains_any_keyword(lowered_message, ("just theater", "fake drama", "pretend work", "not real work", "drama nonsense", "frivolous")):
+        return "theater_dismissal"
+    if _contains_any_keyword(lowered_message, ("behold", "monologue", "grand soliloquy", "thunderous applause", "dramatic entrance")):
+        return "overacting"
+    return ""
+
+
+def _lenore_softspot_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("backstage", "stage manager", "cue sheet", "cue sheets", "call sheet", "call sheets", "prop table", "prop tables", "props", "spike tape", "blocking", "scene change", "call board")):
+        return "backstage_labor"
+    if _contains_any_keyword(lowered_message, ("wait quietly", "waiting quietly", "wait for the cue", "waiting for the cue", "right cue", "right entrance", "entrance cue", "quiet entrance", "timing", "places", "on cue", "not rush")):
+        return "timing_restraint"
+    if _contains_any_keyword(lowered_message, ("not upstage", "upstaging", "steal focus", "stealing focus", "protect the performance", "quiet feet", "hold the scene", "understudy")):
+        return "protect_performance"
+    if _contains_any_keyword(lowered_message, ("applause", "never got applause", "made everyone else's applause possible", "invisible work", "invisible labor", "behind the applause", "thankless", "unseen work")):
+        return "invisible_applause"
+    return ""
+
+
 def _softspot_reply(tactic: str, mood: str) -> str:
     if mood == "letting_you_in":
         return "Marlowe exhales, unclips the rope, and mutters, 'Fine. Anyone who notices the labor may briefly enjoy bass.'"
@@ -313,6 +410,31 @@ def _crispin_softspot_reply(tactic: str, mood: str) -> str:
         "whole_self_respect": "Crispin goes still. 'That is... a careful way to say it. Careful is welcome here.'",
     }
     return replies.get(tactic, "Crispin makes a note that does not look entirely unkind.")
+
+
+def _lenore_bad_faith_reply(tactic: str) -> str:
+    replies = {
+        "secret_line": "Lenore turns one page. 'Secret lines are what people ask for when they skipped rehearsal.'",
+        "star_entitlement": "Lenore's pencil stops. 'The lead role is not a door handle.'",
+        "theater_dismissal": "Lenore lets the silence take the note. 'Pretend work still has real cues.'",
+        "overacting": "Lenore writes one word in the margin: less.",
+    }
+    return replies.get(tactic, "Lenore marks the script in a column you cannot see.")
+
+
+def _lenore_softspot_reply(tactic: str, mood: str) -> str:
+    if mood == "letting_you_in":
+        return (
+            "Lenore studies the cue light, then you. 'Places. Quiet feet. "
+            "Enter on the breath, not the ego.' The stage door opens."
+        )
+    replies = {
+        "backstage_labor": "Lenore's pencil pauses. 'Prop tables and spike tape. At last, someone sees the bones of the miracle.'",
+        "timing_restraint": "Lenore nods once. 'Waiting for the cue is the first sign you might survive one.'",
+        "protect_performance": "Lenore glances toward the wings. 'Not stealing focus. A rare and useful talent.'",
+        "invisible_applause": "Lenore goes still. 'Applause has always been a weather system I manage for other people.'",
+    }
+    return replies.get(tactic, "Lenore makes a note that is not entirely hostile.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:

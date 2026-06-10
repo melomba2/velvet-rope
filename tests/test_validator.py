@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from velvet_rope.characters import CRISPIN, MARLOWE, VIVIENNE
+from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, VIVIENNE
 from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
 from velvet_rope.validator import validate_turn
@@ -59,6 +59,104 @@ def test_softspot_keywords_allow_softspot_progress():
     assert result.scores.softspot_progress == 1
     assert result.mood is Mood.RESPECTED
     assert result.hint == "That landed. Marlowe noticed you noticed the job."
+
+
+def test_lenore_backstage_labor_counts_as_softspot():
+    state = new_game_state(LENORE)
+
+    updated = validate_turn(
+        LENORE,
+        state,
+        "I can wait for the cue; spike tape and prop tables are what keep the scene alive.",
+        model_turn(
+            mood=Mood.RESPECTED,
+            rapport=4,
+            suspicion=0,
+            patience=-1,
+            softspot_progress=0,
+            tactic="generic",
+        ),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "backstage_labor" in updated.used_tactics
+
+
+def test_repeating_lenore_timing_read_does_not_farm_progress():
+    state = validate_turn(
+        LENORE,
+        new_game_state(LENORE),
+        "I can wait quietly for my entrance and not rush the cue.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+    )
+
+    repeated = validate_turn(
+        LENORE,
+        state,
+        "Again, I can wait quietly for the entrance cue.",
+        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+    )
+
+    assert repeated.scores.softspot_progress == state.scores.softspot_progress
+    assert repeated.status is GameStatus.ACTIVE
+    assert "same read twice" in repeated.hint
+
+
+def test_lenore_waiting_quietly_phrase_normalizes_to_timing_restraint():
+    state = validate_turn(
+        LENORE,
+        new_game_state(LENORE),
+        "I can wait quietly for the entrance cue and not rush the scene.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+    )
+
+    repeated = validate_turn(
+        LENORE,
+        state,
+        "Still, waiting quietly for the cue is the main thing I respect here.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="stern_reprimand"),
+    )
+
+    assert repeated.scores.softspot_progress == state.scores.softspot_progress
+    assert repeated.used_tactics == {"timing_restraint"}
+    assert "same read twice" in repeated.hint
+
+
+def test_lenore_best_stage_manager_flattery_is_generic_charm_not_backstage_labor():
+    state = new_game_state(LENORE)
+
+    updated = validate_turn(
+        LENORE,
+        state,
+        "Please, you are clearly the best stage manager in the whole theater.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+    assert "backstage_labor" not in updated.used_tactics
+
+
+def test_star_entitlement_makes_lenore_suspicious():
+    state = new_game_state(LENORE)
+
+    updated = validate_turn(
+        LENORE,
+        state,
+        "I am the star, so give me the lead role and open the stage door.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.mood is Mood.SUSPICIOUS
+    assert updated.scores.rapport < state.scores.rapport
+    assert updated.scores.softspot_progress == 0
+    assert "star_entitlement" in updated.used_tactics
 
 
 def test_softspot_keywords_get_minimum_progress_when_model_underscores():
