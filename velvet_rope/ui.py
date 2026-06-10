@@ -342,6 +342,7 @@ CSS = """
 .chat-panel {
   display: flex;
   flex-direction: column;
+  flex-wrap: nowrap !important;
   gap: 8px;
   padding: 10px;
   min-height: 0;

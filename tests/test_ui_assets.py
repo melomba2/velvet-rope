@@ -369,3 +369,10 @@ def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
     assert "justify-content: flex-end;" in CSS
     assert "flex: 0 0 340px !important;" in CSS
     assert "max-width: 340px;" in CSS
+
+
+def test_chat_panel_keeps_input_controls_stacked_after_messages_render():
+    chat_panel_block = CSS.split(".chat-panel {", 2)[2].split("}", 1)[0]
+
+    assert "flex-direction: column;" in chat_panel_block
+    assert "flex-wrap: nowrap" in chat_panel_block
