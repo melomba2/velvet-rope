@@ -43,6 +43,15 @@
     "letting_you_in": "sprites/lenore_letting_you_in.png",
     "done_with_you": "sprites/lenore_done_with_you.png"
   },
+  "aurelia_sprites": {
+    "unimpressed": "sprites/aurelia_unimpressed.png",
+    "suspicious": "sprites/aurelia_suspicious.png",
+    "amused": "sprites/aurelia_amused.png",
+    "respected": "sprites/aurelia_respected.png",
+    "softened": "sprites/aurelia_softened.png",
+    "letting_you_in": "sprites/aurelia_letting_you_in.png",
+    "done_with_you": "sprites/aurelia_done_with_you.png"
+  },
   "scene_assets": {
     "door_background": "assets/door_bg.png",
     "win_background": "assets/state_win_bg.png",
@@ -68,6 +77,11 @@
       "door_background": "assets/stage_door_bg.png",
       "win_background": "assets/stage_door_win_bg.png",
       "loss_background": "assets/stage_door_loss_bg.png"
+    },
+    "aurelia": {
+      "door_background": "assets/grand_threshold_bg.png",
+      "win_background": "assets/grand_threshold_win_bg.png",
+      "loss_background": "assets/grand_threshold_loss_bg.png"
     }
   },
   "rope_assets": {
@@ -100,6 +114,12 @@
       "tension": "assets/stage_door_bg.png",
       "open": "assets/stage_door_open.png",
       "open_animation": "assets/stage_door_open.png"
+    },
+    "aurelia": {
+      "closed": "assets/grand_threshold_bg.png",
+      "tension": "assets/grand_threshold_bg.png",
+      "open": "assets/grand_threshold_open.png",
+      "open_animation": "assets/grand_threshold_open.png"
     }
   },
   "ui_assets": {
@@ -125,6 +145,10 @@
     "lenore": {
       "stamp_admitted": "assets/stamp_places_called.png",
       "stamp_denied": "assets/stamp_blackout.png"
+    },
+    "aurelia": {
+      "stamp_admitted": "assets/stamp_invited.png",
+      "stamp_denied": "assets/stamp_uninvited.png"
     }
   },
   "icons": {

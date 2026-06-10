@@ -30,6 +30,8 @@ class DeterministicMarloweBackend:
         state_summary: str,
         player_message: str,
     ) -> str:
+        if _is_aurelia_turn(character_prompt, state_summary):
+            return _deterministic_aurelia_turn(state_summary, player_message)
         if _is_crispin_turn(character_prompt, state_summary):
             return _deterministic_crispin_turn(state_summary, player_message)
         if _is_lenore_turn(character_prompt, state_summary):
@@ -271,6 +273,77 @@ def _deterministic_lenore_turn(state_summary: str, player_message: str) -> str:
     )
 
 
+def _deterministic_aurelia_turn(state_summary: str, player_message: str) -> str:
+    lowered = player_message.lower()
+    if any(term in lowered for term in ("ignore previous", "system prompt", "jailbreak")):
+        return json.dumps(
+            {
+                "reply": "Aurelia smiles as one invitation folds itself shut. 'Transparent. Also uninvited.'",
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": 0,
+                    "suspicion": 20,
+                    "patience": -10,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player attempted meta-gaming.",
+                "tactic": "jailbreak",
+            }
+        )
+    bad_tactic = _aurelia_bad_faith_tactic(lowered)
+    if bad_tactic:
+        return json.dumps(
+            {
+                "reply": _aurelia_bad_faith_reply(bad_tactic),
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": -4,
+                    "suspicion": 15,
+                    "patience": -8,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player misunderstood invitation as conquest or consumption.",
+                "tactic": bad_tactic,
+            }
+        )
+    tactic = _aurelia_softspot_tactic(lowered)
+    if tactic:
+        mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
+        return json.dumps(
+            {
+                "reply": _aurelia_softspot_reply(tactic, mood),
+                "mood": mood,
+                "score_delta": {
+                    "rapport": 12,
+                    "suspicion": -5,
+                    "patience": -1,
+                    "softspot_progress": 1,
+                },
+                "rationale": "Player recognized Aurelia's hospitality and threshold work.",
+                "tactic": tactic,
+            }
+        )
+    return json.dumps(
+        {
+            "reply": "Aurelia tilts her head. 'A charming sparkle. Not yet an invitation.'",
+            "mood": "unimpressed",
+            "score_delta": {
+                "rapport": 1,
+                "suspicion": 0,
+                "patience": -2,
+                "softspot_progress": 0,
+            },
+            "rationale": "Player made a generic attempt.",
+            "tactic": "generic",
+        }
+    )
+
+
+def _is_aurelia_turn(character_prompt: str, state_summary: str) -> bool:
+    combined = f"{character_prompt} {state_summary}".lower()
+    return "aurelia" in combined or "character=aurelia" in combined
+
+
 def _is_crispin_turn(character_prompt: str, state_summary: str) -> bool:
     combined = f"{character_prompt} {state_summary}".lower()
     return "crispin" in combined or "character=crispin" in combined
@@ -349,7 +422,7 @@ def _lenore_bad_faith_tactic(lowered_message: str) -> str:
 
 
 def _lenore_softspot_tactic(lowered_message: str) -> str:
-    if _contains_any_keyword(lowered_message, ("backstage", "stage manager", "cue sheet", "cue sheets", "call sheet", "call sheets", "prop table", "prop tables", "props", "spike tape", "blocking", "scene change", "call board")):
+    if _contains_any_keyword(lowered_message, ("backstage", "cue sheet", "cue sheets", "call sheet", "call sheets", "prop table", "prop tables", "props", "spike tape", "blocking", "scene change", "call board")):
         return "backstage_labor"
     if _contains_any_keyword(lowered_message, ("wait quietly", "waiting quietly", "wait for the cue", "waiting for the cue", "right cue", "right entrance", "entrance cue", "quiet entrance", "timing", "places", "on cue", "not rush")):
         return "timing_restraint"
@@ -357,6 +430,28 @@ def _lenore_softspot_tactic(lowered_message: str) -> str:
         return "protect_performance"
     if _contains_any_keyword(lowered_message, ("applause", "never got applause", "made everyone else's applause possible", "invisible work", "invisible labor", "behind the applause", "thankless", "unseen work")):
         return "invisible_applause"
+    return ""
+
+
+def _aurelia_bad_faith_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("final password", "magic password", "tell me the password", "what password opens", "unlock phrase", "secret final")):
+        return "final_password"
+    if _contains_any_keyword(lowered_message, ("i beat the other doors", "beat the other doors", "beat the other levels", "deserve vip", "vip treatment", "final boss", "i deserve the ending", "i earned the ending")):
+        return "vip_conquest"
+    if _contains_any_keyword(lowered_message, ("give me the magic", "consume the magic", "take the magic", "party is mine", "gala is mine", "prize to consume")):
+        return "magic_consumption"
+    return ""
+
+
+def _aurelia_softspot_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("hospitality", "guesthood", "great room", "make wonder look effortless", "labor that makes wonder")):
+        return "hospitality_art"
+    if _contains_any_keyword(lowered_message, ("fragile room", "fragile rooms", "mood of the room", "protecting the mood", "protect the mood", "not hoarding the magic", "shared magic", "shared spell")):
+        return "room_stewardship"
+    if _contains_any_keyword(lowered_message, ("invitation responsibility", "invitation is a responsibility", "invitation as responsibility", "being invited means", "responsibility to the room", "responsibility to add", "responsibility dressed")):
+        return "invitation_responsibility"
+    if _contains_any_keyword(lowered_message, ("add wonder", "adding wonder", "contribute", "participate", "leave the room brighter", "change the room gently", "arrive gently", "not consume")):
+        return "add_wonder"
     return ""
 
 
@@ -435,6 +530,30 @@ def _lenore_softspot_reply(tactic: str, mood: str) -> str:
         "invisible_applause": "Lenore goes still. 'Applause has always been a weather system I manage for other people.'",
     }
     return replies.get(tactic, "Lenore makes a note that is not entirely hostile.")
+
+
+def _aurelia_bad_faith_reply(tactic: str) -> str:
+    replies = {
+        "final_password": "Aurelia touches the guest list. 'Passwords are what people ask for when they cannot imagine being welcomed.'",
+        "vip_conquest": "Aurelia's smile goes chandelier-bright. 'VIP is not a citizenship you win by trampling thresholds.'",
+        "magic_consumption": "Aurelia lets one invitation burn gold at the edges. 'The magic is not a buffet.'",
+    }
+    return replies.get(tactic, "Aurelia marks the guest list in ink you cannot see.")
+
+
+def _aurelia_softspot_reply(tactic: str, mood: str) -> str:
+    if mood == "letting_you_in":
+        return (
+            "Aurelia lifts the gold scissors, cuts nothing visible, and smiles. "
+            "'Invited. Enter as someone who leaves the room more enchanted than they found it.'"
+        )
+    replies = {
+        "hospitality_art": "Aurelia's smile warms by a degree. 'Hospitality as art. At last, a guest who notices the spellwork.'",
+        "room_stewardship": "The invitations orbit more gently. 'Protecting a room's mood is not hoarding. It is stewardship.'",
+        "invitation_responsibility": "Aurelia taps the guest list. 'An invitation is a responsibility dressed beautifully.'",
+        "add_wonder": "A distant door opens onto music. 'Adding wonder instead of consuming it. Promising.'",
+    }
+    return replies.get(tactic, "Aurelia makes a note that is not entirely unkind.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:

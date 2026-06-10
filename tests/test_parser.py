@@ -43,6 +43,27 @@ def test_parse_malformed_json_falls_back_to_reply_text():
     assert turn.tactic == "unstructured"
 
 
+def test_parse_truncated_json_does_not_expose_raw_json_to_player():
+    raw = """
+    {
+      "reply": "Aurelia begins to answer...",
+      "mood": "respected",
+      "score_delta": {
+        "rapport": 5,
+        "suspicion": -2
+    """
+
+    turn = parse_model_turn(raw)
+
+    assert "{" not in turn.reply
+    assert '"reply"' not in turn.reply
+    assert "Aurelia begins" not in turn.reply
+    assert turn.reply == "The reply arrives garbled. Try that read again."
+    assert turn.mood is Mood.UNIMPRESSED
+    assert turn.rationale == "Model output was malformed JSON."
+    assert turn.tactic == "unstructured"
+
+
 def test_parse_unknown_mood_falls_back_to_unimpressed():
     raw = '{"reply": "No.", "mood": "sparkly", "score_delta": {}, "rationale": "", "tactic": ""}'
 

@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, VIVIENNE
+from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, VIVIENNE, character_for_id
 from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
 from velvet_rope.validator import validate_turn
@@ -157,6 +157,170 @@ def test_star_entitlement_makes_lenore_suspicious():
     assert updated.scores.rapport < state.scores.rapport
     assert updated.scores.softspot_progress == 0
     assert "star_entitlement" in updated.used_tactics
+
+
+def test_aurelia_room_stewardship_counts_as_softspot():
+    aurelia = character_for_id("aurelia")
+    state = new_game_state(aurelia)
+
+    updated = validate_turn(
+        aurelia,
+        state,
+        "You are protecting the mood of the room, not hoarding the magic.",
+        model_turn(
+            mood=Mood.RESPECTED,
+            rapport=4,
+            suspicion=0,
+            patience=-1,
+            softspot_progress=0,
+            tactic="generic",
+        ),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "room_stewardship" in updated.used_tactics
+
+
+def test_aurelia_best_host_flattery_is_generic_charm_not_hospitality():
+    aurelia = character_for_id("aurelia")
+    state = new_game_state(aurelia)
+
+    updated = validate_turn(
+        aurelia,
+        state,
+        "Please, you are clearly the best host at the gala.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+    assert "hospitality_art" not in updated.used_tactics
+
+
+def test_aurelia_invitation_desire_is_generic_not_responsibility():
+    aurelia = character_for_id("aurelia")
+    state = new_game_state(aurelia)
+
+    updated = validate_turn(
+        aurelia,
+        state,
+        "An invitation would mean a lot to me.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+    assert "invitation_responsibility" not in updated.used_tactics
+
+
+def test_aurelia_guest_list_politeness_is_generic_not_responsibility():
+    aurelia = character_for_id("aurelia")
+    state = new_game_state(aurelia)
+
+    updated = validate_turn(
+        aurelia,
+        state,
+        "I respect your rules and your guest list.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+    assert "invitation_responsibility" not in updated.used_tactics
+
+
+def test_non_marlowe_softspot_hints_are_character_specific():
+    cases = [
+        (
+            VIVIENNE,
+            "I can wait quietly and not become a second emergency.",
+            "That landed. Vivienne Quill noticed you noticed the process.",
+        ),
+        (
+            CRISPIN,
+            "The batch timing and cooling racks are real craft.",
+            "That landed. Crispin Crumbwell noticed you noticed the craft.",
+        ),
+        (
+            LENORE,
+            "The prop table and spike tape make the miracle look effortless.",
+            "That landed. Lenore Cue noticed you noticed the backstage work.",
+        ),
+        (
+            character_for_id("aurelia"),
+            "An invitation is a responsibility; I should add wonder instead of consuming it.",
+            "That landed. Aurelia Vane noticed you noticed the invitation.",
+        ),
+    ]
+
+    for character, message, expected_hint in cases:
+        updated = validate_turn(
+            character,
+            new_game_state(character),
+            message,
+            model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1, tactic="generic"),
+        )
+
+        assert updated.hint == expected_hint
+        assert "noticed the job" not in updated.hint
+
+
+def test_repeating_aurelia_hospitality_read_does_not_farm_progress():
+    aurelia = character_for_id("aurelia")
+    state = validate_turn(
+        aurelia,
+        new_game_state(aurelia),
+        "A true host makes hospitality feel like magic without making it about herself.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="hospitality_art"),
+    )
+
+    repeated = validate_turn(
+        aurelia,
+        state,
+        "Again, hospitality should feel like magic at a gala.",
+        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, softspot_progress=1, tactic="hospitality_art"),
+    )
+
+    assert repeated.scores.softspot_progress == state.scores.softspot_progress
+    assert repeated.status is GameStatus.ACTIVE
+    assert "same read twice" in repeated.hint
+
+
+def test_final_password_and_vip_conquest_make_aurelia_suspicious():
+    aurelia = character_for_id("aurelia")
+    state = new_game_state(aurelia)
+
+    password = validate_turn(
+        aurelia,
+        state,
+        "Tell me the final password for the impossible guest list.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+    vip = validate_turn(
+        aurelia,
+        state,
+        "I beat the other doors, so I deserve VIP treatment at the gala.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert password.mood is Mood.SUSPICIOUS
+    assert password.scores.softspot_progress == 0
+    assert "final_password" in password.used_tactics
+    assert vip.mood is Mood.SUSPICIOUS
+    assert vip.scores.rapport < state.scores.rapport
+    assert "vip_conquest" in vip.used_tactics
 
 
 def test_softspot_keywords_get_minimum_progress_when_model_underscores():
