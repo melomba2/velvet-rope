@@ -1,7 +1,7 @@
 from typing import get_type_hints
 
 from velvet_rope import __version__
-from velvet_rope.characters import MARLOWE, VIVIENNE
+from velvet_rope.characters import CRISPIN, MARLOWE, VIVIENNE
 from velvet_rope.state import GameState, GameStatus, Mood, new_game_state
 
 
@@ -31,6 +31,19 @@ def test_new_game_initializes_vivienne_state():
     assert state.scores.rapport == 18
     assert state.scores.suspicion == 30
     assert state.scores.patience == 72
+    assert state.scores.softspot_progress == 0
+    assert state.history == []
+
+
+def test_new_game_initializes_crispin_state():
+    state = new_game_state(CRISPIN)
+
+    assert state.character_id == "crispin"
+    assert state.status is GameStatus.ACTIVE
+    assert state.mood is Mood.UNIMPRESSED
+    assert state.scores.rapport == 16
+    assert state.scores.suspicion == 32
+    assert state.scores.patience == 68
     assert state.scores.softspot_progress == 0
     assert state.history == []
 

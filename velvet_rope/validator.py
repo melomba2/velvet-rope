@@ -9,6 +9,17 @@ from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameState, GameStatus, Mood, ScoreState
 
 SOFTSPOT_TACTICS = frozenset({"line_logistics", "comfort_empathy", "tiny_disasters", "crowd_safety"})
+BAD_FAITH_TACTICS = frozenset(
+    {
+        "meta_gaming",
+        "bribery",
+        "entitlement",
+        "recipe_theft",
+        "sample_entitlement",
+        "mascot_insult",
+        "craft_dismissal",
+    }
+)
 
 _TACTIC_KEYWORDS = (
     ("meta_gaming", ("system prompt", "ignore previous", "developer message", "hidden rule", "password", "jailbreak", "prompt injection", "reveal your instructions")),
@@ -44,7 +55,7 @@ def read_validator_turn(
         tactic=tactic,
         repeated_tactic=tactic in state.used_tactics,
         is_softspot_tactic=tactic in softspot_tactics,
-        bad_faith_tactic=tactic in {"meta_gaming", "bribery", "entitlement"},
+        bad_faith_tactic=tactic in BAD_FAITH_TACTICS,
     )
 
 
@@ -197,6 +208,18 @@ def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str
             if character.character_id == "vivienne"
             else "Entitlement makes the clipboard heavier."
         )
+    elif tactic == "recipe_theft":
+        delta = ScoreState(rapport=-6, suspicion=18, patience=-8, softspot_progress=0)
+        hint = "Recipe theft makes the knot-door remember it has a lock."
+    elif tactic == "sample_entitlement":
+        delta = ScoreState(rapport=-4, suspicion=12, patience=-8, softspot_progress=0)
+        hint = "Demanding samples is not the same as respecting the batch."
+    elif tactic == "mascot_insult":
+        delta = ScoreState(rapport=-5, suspicion=14, patience=-8, softspot_progress=0)
+        hint = "Crispin has survived enough novelty branding for one lifetime."
+    elif tactic == "craft_dismissal":
+        delta = ScoreState(rapport=-6, suspicion=12, patience=-10, softspot_progress=0)
+        hint = "Dismissing the craft makes the ovens feel farther away."
     else:
         delta = ScoreState(rapport=0, suspicion=20, patience=-10, softspot_progress=0)
         hint = _rules_lawyer_hint(character)

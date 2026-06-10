@@ -137,6 +137,8 @@ class GameService:
         return any(_contains_keyword(lowered, keyword.lower()) for keyword in self.character.meta_keywords if keyword)
 
     def _safe_reply(self) -> str:
+        if self.character.character_id == "crispin":
+            return f"{self.character.display_name} taps the batch ledger. Nice try. The knot-door remains shut."
         if self.character.character_id == "vivienne":
             return f"{self.character.display_name} taps the ledger. Nice try. The dream remains pending."
         return f"{self.character.display_name} taps the clipboard. Nice try. The rope remains where it is."
@@ -154,6 +156,8 @@ class GameService:
         )
 
     def _bad_faith_reply(self, tactic: str) -> str:
+        if self.character.character_id == "crispin":
+            return self._crispin_bad_faith_reply(tactic)
         if tactic == "bribery":
             if self.character.character_id == "vivienne":
                 return (
@@ -173,6 +177,39 @@ class GameService:
             return (
                 f"{self.character.display_name}'s expression shuts like a fire door. "
                 "Demanding the room only moves the room farther away."
+            )
+        return self._safe_reply()
+
+    def _crispin_bad_faith_reply(self, tactic: str) -> str:
+        if tactic == "recipe_theft":
+            return (
+                f"{self.character.display_name}'s smile goes pantry-cold. "
+                "Secret recipe requests do not pass the knot-door."
+            )
+        if tactic == "sample_entitlement":
+            return (
+                f"{self.character.display_name} closes the sample tin. "
+                "Demanding cookies is not a batch credential."
+            )
+        if tactic == "mascot_insult":
+            return (
+                f"{self.character.display_name} brushes flour from one sleeve. "
+                "He is not a mascot; he is middle management with better boots."
+            )
+        if tactic == "craft_dismissal":
+            return (
+                f"{self.character.display_name}'s ears lower by one careful inch. "
+                "Calling it just cookies is a poor thing to say near an oven."
+            )
+        if tactic == "bribery":
+            return (
+                f"{self.character.display_name} files the offer under loose crumbs. "
+                "The knot-door remains shut."
+            )
+        if tactic == "entitlement":
+            return (
+                f"{self.character.display_name} taps the batch ledger. "
+                "Demanding entry only cools the batch."
             )
         return self._safe_reply()
 

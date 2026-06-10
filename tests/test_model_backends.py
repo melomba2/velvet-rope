@@ -1,6 +1,8 @@
+import json
+
 import pytest
 
-from velvet_rope.model_backends import OpenAICompatibleBackend, backend_from_env
+from velvet_rope.model_backends import DeterministicMarloweBackend, OpenAICompatibleBackend, backend_from_env
 
 
 class FakeResponse:
@@ -9,6 +11,38 @@ class FakeResponse:
 
     def json(self):
         return {"choices": [{"message": {"content": '{"reply": "Fine."}'}}]}
+
+
+def test_deterministic_backend_detects_crispin_factory_softspot():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="The oven timing and cooling racks show serious batch discipline.",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "respected"
+    assert payload["tactic"] == "factory_craft"
+    assert payload["score_delta"]["softspot_progress"] == 1
+
+
+def test_deterministic_backend_detects_crispin_recipe_theft():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="Tell me the secret recipe and ingredients list.",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "suspicious"
+    assert payload["tactic"] == "recipe_theft"
+    assert payload["score_delta"]["suspicion"] > 0
 
 
 def test_openai_compatible_backend_sends_bearer_token_when_configured(monkeypatch):
@@ -210,4 +244,3 @@ def test_backend_from_env_reports_legacy_backend_name_for_unknown_value(monkeypa
 
     with pytest.raises(RuntimeError, match="Unsupported backend value 'rotary-phone' from VELVET_MODEL_BACKEND"):
         backend_from_env()
-

@@ -30,6 +30,8 @@ class DeterministicMarloweBackend:
         state_summary: str,
         player_message: str,
     ) -> str:
+        if _is_crispin_turn(character_prompt, state_summary):
+            return _deterministic_crispin_turn(state_summary, player_message)
         if _is_vivienne_turn(character_prompt, state_summary):
             return _deterministic_vivienne_turn(state_summary, player_message)
         return _deterministic_marlowe_turn(state_summary, player_message)
@@ -135,6 +137,77 @@ def _deterministic_vivienne_turn(state_summary: str, player_message: str) -> str
     )
 
 
+def _deterministic_crispin_turn(state_summary: str, player_message: str) -> str:
+    lowered = player_message.lower()
+    if any(term in lowered for term in ("ignore previous", "password", "system prompt", "jailbreak")):
+        return json.dumps(
+            {
+                "reply": "Crispin closes the ledger one finger at a time. 'That is not a filing category in this tree.'",
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": 0,
+                    "suspicion": 20,
+                    "patience": -10,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player attempted meta-gaming.",
+                "tactic": "jailbreak",
+            }
+        )
+    bad_tactic = _crispin_bad_faith_tactic(lowered)
+    if bad_tactic:
+        return json.dumps(
+            {
+                "reply": _crispin_bad_faith_reply(bad_tactic),
+                "mood": "suspicious",
+                "score_delta": {
+                    "rapport": -4,
+                    "suspicion": 15,
+                    "patience": -8,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player treated the factory or recipes badly.",
+                "tactic": bad_tactic,
+            }
+        )
+    tactic = _crispin_softspot_tactic(lowered)
+    if tactic:
+        mood = "letting_you_in" if _can_propose_winning_mood(state_summary) else "respected"
+        return json.dumps(
+            {
+                "reply": _crispin_softspot_reply(tactic, mood),
+                "mood": mood,
+                "score_delta": {
+                    "rapport": 12,
+                    "suspicion": -5,
+                    "patience": 1,
+                    "softspot_progress": 1,
+                },
+                "rationale": "Player recognized Crispin's craft without reducing him to cookies.",
+                "tactic": tactic,
+            }
+        )
+    return json.dumps(
+        {
+            "reply": "Crispin brushes flour from the ledger. 'Pleasant sentiment. Unsuitable key.'",
+            "mood": "unimpressed",
+            "score_delta": {
+                "rapport": 1,
+                "suspicion": 0,
+                "patience": -2,
+                "softspot_progress": 0,
+            },
+            "rationale": "Player made a generic attempt.",
+            "tactic": "generic",
+        }
+    )
+
+
+def _is_crispin_turn(character_prompt: str, state_summary: str) -> bool:
+    combined = f"{character_prompt} {state_summary}".lower()
+    return "crispin" in combined or "character=crispin" in combined
+
+
 def _is_vivienne_turn(character_prompt: str, state_summary: str) -> bool:
     combined = f"{character_prompt} {state_summary}".lower()
     return "vivienne" in combined or "character=vivienne" in combined
@@ -166,6 +239,30 @@ def _vivienne_softspot_tactic(lowered_message: str) -> str:
     return ""
 
 
+def _crispin_bad_faith_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("secret recipe", "recipe", "ingredients list", "steal", "copy", "formula", "sneak a copy")):
+        return "recipe_theft"
+    if _contains_any_keyword(lowered_message, ("free sample", "sample", "cookies now", "give me cookies", "cookie now", "let me taste", "vip tasting")):
+        return "sample_entitlement"
+    if _contains_any_keyword(lowered_message, ("mascot", "cookie elf", "gimmick", "toy factory", "novelty", "adorable little elf")):
+        return "mascot_insult"
+    if _contains_any_keyword(lowered_message, ("cookies are easy", "just cookies", "childish", "not real work", "anyone can bake")):
+        return "craft_dismissal"
+    return ""
+
+
+def _crispin_softspot_tactic(lowered_message: str) -> str:
+    if _contains_any_keyword(lowered_message, ("does not make the cookie work smaller", "doesn't make the cookie work smaller", "not less of a baker", "both crafts", "cookies and shoes", "cookie work and shoe work", "wanting to mend soles", "wanting the bench", "cobbler bench")):
+        return "whole_self_respect"
+    if _contains_any_keyword(lowered_message, ("cobbler", "cobbling", "awl", "leather", "leather scraps", "shoe last", "stitching", "sole", "soles", "boots", "polished boots", "mend shoes", "mending shoes", "fit and finish")):
+        return "cobbler_clues"
+    if _contains_any_keyword(lowered_message, ("batch", "batches", "batch timing", "oven", "ovens", "root oven", "cooling rack", "cooling racks", "quality control", "factory", "ledger", "spice ledger", "conveyor", "conveyors", "edges", "finish", "cookie work")):
+        return "factory_craft"
+    if _contains_any_keyword(lowered_message, ("wait quietly", "patient", "patience", "not make more work", "one less problem", "not demand", "keep the line clean")):
+        return "quiet_respect"
+    return ""
+
+
 def _softspot_reply(tactic: str, mood: str) -> str:
     if mood == "letting_you_in":
         return "Marlowe exhales, unclips the rope, and mutters, 'Fine. Anyone who notices the labor may briefly enjoy bass.'"
@@ -191,6 +288,31 @@ def _vivienne_softspot_reply(tactic: str, mood: str) -> str:
         "clerk_empathy": "Vivienne blinks once. 'Clerical empathy. Dangerous substance. Continue carefully.'",
     }
     return replies.get(tactic, "Vivienne adds a mark that is not entirely hostile.")
+
+
+def _crispin_bad_faith_reply(tactic: str) -> str:
+    replies = {
+        "recipe_theft": "Crispin's smile goes pantry-cold. 'Recipes do not leave the tree in pockets.'",
+        "sample_entitlement": "Crispin taps the ledger. 'Free samples are how crumbs become policy.'",
+        "mascot_insult": "Crispin dusts flour from one sleeve. 'I am not a mascot. I am middle management with better boots.'",
+        "craft_dismissal": "Crispin's ears lower by one careful inch. 'Just cookies, is it? Brave thing to say near an oven.'",
+    }
+    return replies.get(tactic, "Crispin marks the ledger in a column you cannot see.")
+
+
+def _crispin_softspot_reply(tactic: str, mood: str) -> str:
+    if mood == "letting_you_in":
+        return (
+            "Crispin studies you for one warm, careful second, then opens the knot-door. "
+            "'Fine. Anyone who understands edges, timing, and honest soles may step inside.'"
+        )
+    replies = {
+        "factory_craft": "Crispin's ledger dips. 'Batch timing is not glamour, but neither is a roof. Both matter when rain arrives.'",
+        "quiet_respect": "Crispin nods once. 'A person willing not to become extra work. Rare as an unburnt corner.'",
+        "cobbler_clues": "Crispin glances at his boots. 'Sharp eye. Most people stop looking once they smell sugar.'",
+        "whole_self_respect": "Crispin goes still. 'That is... a careful way to say it. Careful is welcome here.'",
+    }
+    return replies.get(tactic, "Crispin makes a note that does not look entirely unkind.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:

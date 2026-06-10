@@ -83,9 +83,9 @@ CSS = """
 
 .level-select-card {
   position: relative;
-  flex: 0 0 260px !important;
-  width: 260px;
-  max-width: 260px;
+  flex: 0 0 340px !important;
+  width: 340px;
+  max-width: 340px;
   margin-left: auto;
   padding: 8px 10px;
   border: 1px solid rgba(214, 177, 94, 0.58);
@@ -750,6 +750,8 @@ def _stamp_html(state: GameState) -> str:
 
 
 def _stamp_label(state: GameState) -> str:
+    if state.character_id == "crispin":
+        return "Cookie crowned" if state.status is GameStatus.WON else "Crumbled"
     if state.character_id == "vivienne":
         return "Dream placed" if state.status is GameStatus.WON else "Misfiled"
     return "Admitted" if state.status is GameStatus.WON else "Denied"
@@ -759,7 +761,12 @@ def _rope_html(state: GameState) -> str:
     rope_url = state_rope_url(state)
     if rope_url is None:
         return ""
-    label = "the dream gate opens" if state.character_id == "vivienne" else "the velvet rope opens"
+    if state.character_id == "crispin":
+        label = "the knot-door opens"
+    elif state.character_id == "vivienne":
+        label = "the dream gate opens"
+    else:
+        label = "the velvet rope opens"
     return (
         '<div class="velvet-rope-layer">'
         f'<img class="velvet-rope-sprite" src="{html.escape(rope_url, quote=True)}" alt="{label}">'

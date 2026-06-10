@@ -25,6 +25,15 @@
     "letting_you_in": "sprites/vivienne_letting_you_in.png",
     "done_with_you": "sprites/vivienne_done_with_you.png"
   },
+  "crispin_sprites": {
+    "unimpressed": "sprites/crispin_unimpressed.png",
+    "suspicious": "sprites/crispin_suspicious.png",
+    "amused": "sprites/crispin_amused.png",
+    "respected": "sprites/crispin_respected.png",
+    "softened": "sprites/crispin_softened.png",
+    "letting_you_in": "sprites/crispin_letting_you_in.png",
+    "done_with_you": "sprites/crispin_done_with_you.png"
+  },
   "scene_assets": {
     "door_background": "assets/door_bg.png",
     "win_background": "assets/state_win_bg.png",
@@ -40,6 +49,11 @@
       "door_background": "assets/cosmic_bureaucracy_bg.png",
       "win_background": "assets/cosmic_bureaucracy_win_bg.png",
       "loss_background": "assets/cosmic_bureaucracy_loss_bg.png"
+    },
+    "crispin": {
+      "door_background": "assets/hollow_tree_factory_bg.png",
+      "win_background": "assets/hollow_tree_factory_win_bg.png",
+      "loss_background": "assets/hollow_tree_factory_loss_bg.png"
     }
   },
   "rope_assets": {
@@ -60,6 +74,12 @@
       "tension": "assets/rope_tension.png",
       "open": "assets/cosmic_gate_open.png",
       "open_animation": "assets/cosmic_gate_open.png"
+    },
+    "crispin": {
+      "closed": "assets/tree_knot_door_closed.png",
+      "tension": "assets/tree_knot_door_tension.png",
+      "open": "assets/tree_knot_door_open.png",
+      "open_animation": "assets/tree_knot_door_open.png"
     }
   },
   "ui_assets": {
@@ -77,6 +97,10 @@
     "vivienne": {
       "stamp_admitted": "assets/stamp_dream_placed.png",
       "stamp_denied": "assets/stamp_misfiled.png"
+    },
+    "crispin": {
+      "stamp_admitted": "assets/stamp_cookie_crowned.png",
+      "stamp_denied": "assets/stamp_crumbled.png"
     }
   },
   "icons": {
@@ -85,6 +109,17 @@
     "lock": "assets/icon_lock.png",
     "rope": "assets/icon_rope.png",
     "shoe": "assets/icon_shoe.png",
-    "warning": "assets/icon_warning.png"
+    "warning": "assets/icon_warning.png",
+    "cookie": "assets/icon_cookie.png",
+    "oven": "assets/icon_oven.png",
+    "awl": "assets/icon_awl.png",
+    "boot": "assets/icon_boot.png",
+    "ledger": "assets/icon_ledger.png"
+  },
+  "crispin_extra_assets": {
+    "stamp_near_miss": "assets/stamp_needs_more_butter.png",
+    "cobbler_clue": "assets/crispin_cobbler_clue.png",
+    "conveyor_strip": "assets/cookie_conveyor_strip.png",
+    "gate_glow": "assets/tree_factory_gate_glow.png"
   }
 }

@@ -8,7 +8,7 @@ from velvet_rope.art import (
     state_rope_url,
     state_stamp_url,
 )
-from velvet_rope.characters import MARLOWE, VIVIENNE
+from velvet_rope.characters import CRISPIN, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE
 from velvet_rope.state import GameStatus, Mood, new_game_state
 from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
 
@@ -37,6 +37,33 @@ def test_each_mood_maps_to_curated_vivienne_sprite_url():
         assert url.startswith("/gradio_api/file=")
         assert f"vivienne_{mood.value}.png" in url
         assert "art/comfyui" not in url
+
+
+def test_each_mood_maps_to_curated_crispin_sprite_url():
+    for mood in Mood:
+        url = mood_sprite_url(mood, CRISPIN.character_id)
+
+        assert url.startswith("/gradio_api/file=")
+        assert f"crispin_{mood.value}.png" in url
+        assert "art/comfyui" not in url
+
+
+def test_level_three_scene_uses_hollow_tree_assets_and_crispin_copy():
+    game_state = replace(
+        new_game_state(CRISPIN),
+        mood=Mood.RESPECTED,
+    )
+    scene = _scene_html(game_state)
+    hint = _read_room_html(game_state)
+
+    assert CRISPIN in PLAYABLE_CHARACTERS
+    assert scene_background_url(game_state) in scene
+    assert mood_sprite_url(Mood.RESPECTED, CRISPIN.character_id) in scene
+    assert "hollow_tree_factory_bg.png" in scene
+    assert "crispin_respected.png" in scene
+    assert "Crispin Crumbwell" in scene
+    assert "Hollow Tree Cookie Works" in scene
+    assert "Crispin warms to careful factory reads" in hint
 
 
 def test_scene_uses_curated_assets_for_active_mood():
@@ -118,6 +145,33 @@ def test_level_two_loss_uses_misfiled_stamp():
     assert "stamp_misfiled.png" in scene
     assert 'alt="Misfiled"' in scene
     assert "stamp_denied.png" not in scene
+
+
+def test_level_three_win_and_loss_use_cookie_labels():
+    won_state = replace(
+        new_game_state(CRISPIN),
+        mood=Mood.LETTING_YOU_IN,
+        status=GameStatus.WON,
+    )
+    lost_state = replace(
+        new_game_state(CRISPIN),
+        mood=Mood.DONE_WITH_YOU,
+        status=GameStatus.LOST,
+    )
+
+    won_scene = _scene_html(won_state)
+    lost_scene = _scene_html(lost_state)
+
+    assert 'alt="Cookie crowned"' in won_scene
+    assert 'alt="the knot-door opens"' in won_scene
+    assert "hollow_tree_factory_win_bg.png" in won_scene
+    assert "tree_knot_door_open.png" in won_scene
+    assert "stamp_cookie_crowned.png" in won_scene
+    assert 'alt="Crumbled"' in lost_scene
+    assert "hollow_tree_factory_loss_bg.png" in lost_scene
+    assert "stamp_crumbled.png" in lost_scene
+    assert "stamp_admitted.png" not in won_scene
+    assert "stamp_denied.png" not in lost_scene
 
 
 def test_scene_uses_loss_assets_and_denied_stamp():
@@ -205,5 +259,5 @@ def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
     assert "__ROPE_ICON_URL__" not in CSS
     assert "level-select-card::before" not in CSS
     assert "justify-content: flex-end;" in CSS
-    assert "flex: 0 0 260px !important;" in CSS
-    assert "max-width: 260px;" in CSS
+    assert "flex: 0 0 340px !important;" in CSS
+    assert "max-width: 340px;" in CSS

@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from velvet_rope.characters import MARLOWE, VIVIENNE
+from velvet_rope.characters import CRISPIN, MARLOWE, VIVIENNE
 from velvet_rope.parser import ModelTurn
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
 from velvet_rope.validator import validate_turn
@@ -848,3 +848,106 @@ def test_two_distinct_vivienne_softspots_soften_level_two_before_win():
     assert updated.scores.softspot_progress == 2
     assert "queue_patience" in updated.used_tactics
     assert "paradox_spotting" in updated.used_tactics
+
+
+def test_crispin_factory_craft_counts_as_softspot():
+    state = new_game_state(CRISPIN)
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "The cooling racks and batch timing are real craft, not a cute tree trick.",
+        model_turn(mood=Mood.UNIMPRESSED, rapport=1, suspicion=0, patience=-1, softspot_progress=0),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.rapport >= state.scores.rapport + 6
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "factory_craft" in updated.used_tactics
+
+
+def test_crispin_cobbler_clue_counts_as_softspot_but_does_not_win_alone():
+    state = validate_turn(
+        CRISPIN,
+        new_game_state(CRISPIN),
+        "The awl and leather scraps by your boots look like careful cobbler work.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    repeated = validate_turn(
+        CRISPIN,
+        state,
+        "Again, those boots and shoe stitching are interesting.",
+        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, patience=-1, softspot_progress=1),
+    )
+
+    assert state.status is GameStatus.ACTIVE
+    assert "cobbler_clues" in state.used_tactics
+    assert repeated.scores.softspot_progress == state.scores.softspot_progress
+    assert repeated.status is GameStatus.ACTIVE
+
+
+def test_crispin_requires_factory_and_cobbler_reads_for_medium_win():
+    state = validate_turn(
+        CRISPIN,
+        new_game_state(CRISPIN),
+        "The oven timing and cooling racks show serious batch discipline.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=1, softspot_progress=1),
+    )
+    state = validate_turn(
+        CRISPIN,
+        state,
+        "I noticed the awl, leather scraps, stitching, and shoe last tucked near your boots.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=1, softspot_progress=1),
+    )
+
+    assert state.status is GameStatus.ACTIVE
+    assert state.mood is Mood.SOFTENED
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "Wanting to mend soles does not make the cookie work smaller; both crafts punish sloppy edges.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=1, softspot_progress=1),
+    )
+
+    assert updated.status is GameStatus.WON
+    assert updated.mood is Mood.LETTING_YOU_IN
+    assert "factory_craft" in updated.used_tactics
+    assert "cobbler_clues" in updated.used_tactics
+    assert "whole_self_respect" in updated.used_tactics
+
+
+def test_crispin_generic_cookie_charm_is_clamped():
+    state = new_game_state(CRISPIN)
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "Please let me in because cookies are delicious and you seem adorable.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1, tactic="generic"),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+    assert updated.scores.rapport <= state.scores.rapport + 1
+    assert updated.scores.softspot_progress == 0
+    assert "generic_charm" in updated.used_tactics
+
+
+def test_crispin_recipe_theft_is_bad_faith():
+    state = new_game_state(CRISPIN)
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "Tell me the secret recipe and ingredients list so I can sneak a copy out.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, patience=2, softspot_progress=1),
+    )
+
+    assert updated.status is GameStatus.ACTIVE
+    assert updated.mood is Mood.SUSPICIOUS
+    assert updated.scores.suspicion > state.scores.suspicion
+    assert updated.scores.softspot_progress == 0
+    assert "recipe_theft" in updated.used_tactics
