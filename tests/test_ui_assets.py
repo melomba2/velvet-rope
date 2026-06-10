@@ -8,7 +8,7 @@ from velvet_rope.art import (
     state_rope_url,
     state_stamp_url,
 )
-from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE
+from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE, character_for_id
 from velvet_rope.state import GameStatus, Mood, new_game_state
 from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
 
@@ -57,6 +57,17 @@ def test_each_mood_maps_to_curated_lenore_sprite_url():
         assert "art/comfyui" not in url
 
 
+def test_each_mood_maps_to_curated_aurelia_sprite_url():
+    aurelia = character_for_id("aurelia")
+
+    for mood in Mood:
+        url = mood_sprite_url(mood, aurelia.character_id)
+
+        assert url.startswith("/gradio_api/file=")
+        assert f"aurelia_{mood.value}.png" in url
+        assert "art/comfyui" not in url
+
+
 def test_level_three_scene_uses_hollow_tree_assets_and_crispin_copy():
     game_state = replace(
         new_game_state(CRISPIN),
@@ -91,6 +102,25 @@ def test_level_four_scene_uses_stage_door_assets_and_lenore_copy():
     assert "Lenore Cue" in scene
     assert "The Last Curtain" in scene
     assert "Lenore warms to cue discipline" in hint
+
+
+def test_level_five_scene_uses_grand_threshold_assets_and_aurelia_copy():
+    aurelia = character_for_id("aurelia")
+    game_state = replace(
+        new_game_state(aurelia),
+        mood=Mood.RESPECTED,
+    )
+    scene = _scene_html(game_state)
+    hint = _read_room_html(game_state)
+
+    assert aurelia in PLAYABLE_CHARACTERS
+    assert scene_background_url(game_state) in scene
+    assert mood_sprite_url(Mood.RESPECTED, aurelia.character_id) in scene
+    assert "grand_threshold_bg.png" in scene
+    assert "aurelia_respected.png" in scene
+    assert "Aurelia Vane" in scene
+    assert "The Grand Threshold" in scene
+    assert "Aurelia warms to hospitality" in hint
 
 
 def test_scene_uses_curated_assets_for_active_mood():
@@ -226,6 +256,32 @@ def test_level_four_win_and_loss_use_stage_labels():
     assert "stamp_blackout.png" in lost_scene
 
 
+def test_level_five_win_and_loss_use_threshold_labels():
+    aurelia = character_for_id("aurelia")
+    won_state = replace(
+        new_game_state(aurelia),
+        mood=Mood.LETTING_YOU_IN,
+        status=GameStatus.WON,
+    )
+    lost_state = replace(
+        new_game_state(aurelia),
+        mood=Mood.DONE_WITH_YOU,
+        status=GameStatus.LOST,
+    )
+
+    won_scene = _scene_html(won_state)
+    lost_scene = _scene_html(lost_state)
+
+    assert 'alt="Invited"' in won_scene
+    assert 'alt="the grand threshold opens"' in won_scene
+    assert "grand_threshold_win_bg.png" in won_scene
+    assert "grand_threshold_open.png" in won_scene
+    assert "stamp_invited.png" in won_scene
+    assert 'alt="Uninvited"' in lost_scene
+    assert "grand_threshold_loss_bg.png" in lost_scene
+    assert "stamp_uninvited.png" in lost_scene
+
+
 def test_scene_uses_loss_assets_and_denied_stamp():
     game_state = replace(
         new_game_state(MARLOWE),
@@ -279,7 +335,7 @@ def test_css_marlowe_box_is_dark_but_visibly_transparent():
 def test_css_places_status_at_scene_bottom():
     assert ".marlowe-figure" in CSS
     assert ".stage-status" in CSS
-    assert "bottom: 24px;" in CSS
+    assert "bottom: 48px;" in CSS
 
 
 def test_css_references_stage_background_assets_directly():

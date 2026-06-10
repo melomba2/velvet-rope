@@ -299,7 +299,7 @@ CSS = """
   line-height: 1.45;
   position: absolute;
   right: 18px;
-  bottom: 24px;
+  bottom: 48px;
   z-index: 5;
   max-width: min(46ch, 52%);
   text-shadow: 0 2px 0 #09090b, 0 0 12px #09090b;
@@ -498,7 +498,7 @@ CSS = """
 
   .stage-status {
     right: 8px;
-    bottom: 22px;
+    bottom: 36px;
     max-width: calc(100% - 16px);
     font-size: 0.88rem;
   }
@@ -750,6 +750,8 @@ def _stamp_html(state: GameState) -> str:
 
 
 def _stamp_label(state: GameState) -> str:
+    if state.character_id == "aurelia":
+        return "Invited" if state.status is GameStatus.WON else "Uninvited"
     if state.character_id == "lenore":
         return "Places called" if state.status is GameStatus.WON else "Blackout"
     if state.character_id == "crispin":
@@ -763,7 +765,9 @@ def _rope_html(state: GameState) -> str:
     rope_url = state_rope_url(state)
     if rope_url is None:
         return ""
-    if state.character_id == "crispin":
+    if state.character_id == "aurelia":
+        label = "the grand threshold opens"
+    elif state.character_id == "crispin":
         label = "the knot-door opens"
     elif state.character_id == "lenore":
         label = "the stage door opens"

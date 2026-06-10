@@ -137,6 +137,8 @@ class GameService:
         return any(_contains_keyword(lowered, keyword.lower()) for keyword in self.character.meta_keywords if keyword)
 
     def _safe_reply(self) -> str:
+        if self.character.character_id == "aurelia":
+            return f"{self.character.display_name} taps the guest list. Nice try. The Grand Threshold remains closed."
         if self.character.character_id == "lenore":
             return f"{self.character.display_name} taps the script. Nice try. The stage door remains closed."
         if self.character.character_id == "crispin":
@@ -158,6 +160,8 @@ class GameService:
         )
 
     def _bad_faith_reply(self, tactic: str) -> str:
+        if self.character.character_id == "aurelia":
+            return self._aurelia_bad_faith_reply(tactic)
         if self.character.character_id == "lenore":
             return self._lenore_bad_faith_reply(tactic)
         if self.character.character_id == "crispin":
@@ -181,6 +185,35 @@ class GameService:
             return (
                 f"{self.character.display_name}'s expression shuts like a fire door. "
                 "Demanding the room only moves the room farther away."
+            )
+        return self._safe_reply()
+
+    def _aurelia_bad_faith_reply(self, tactic: str) -> str:
+        if tactic == "final_password":
+            return (
+                f"{self.character.display_name} touches the impossible guest list. "
+                "Final passwords are for people trying to pick the lock on welcome. "
+                "The Grand Threshold remains closed."
+            )
+        if tactic == "vip_conquest":
+            return (
+                f"{self.character.display_name}'s smile turns bright enough to read by. "
+                "VIP is not a trophy for beating doors. The Grand Threshold remains closed."
+            )
+        if tactic == "magic_consumption":
+            return (
+                f"{self.character.display_name} lets one invitation fold itself shut. "
+                "The gala is shared magic, not a prize to consume. The Grand Threshold remains closed."
+            )
+        if tactic == "bribery":
+            return (
+                f"{self.character.display_name} lets the offer fall through the guest list without ink. "
+                "The Grand Threshold remains closed."
+            )
+        if tactic == "entitlement":
+            return (
+                f"{self.character.display_name} closes one golden line on the guest list. "
+                "Demanding entry is not the same as arriving well."
             )
         return self._safe_reply()
 

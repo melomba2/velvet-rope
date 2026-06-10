@@ -22,6 +22,9 @@ BAD_FAITH_TACTICS = frozenset(
         "star_entitlement",
         "theater_dismissal",
         "overacting",
+        "final_password",
+        "vip_conquest",
+        "magic_consumption",
     }
 )
 
@@ -236,6 +239,15 @@ def _apply_bad_faith_penalty(character: Character, state: GameState, tactic: str
     elif tactic == "overacting":
         delta = ScoreState(rapport=-3, suspicion=10, patience=-8, softspot_progress=0)
         hint = "Overacting at Lenore is still stealing focus."
+    elif tactic == "final_password":
+        delta = ScoreState(rapport=-4, suspicion=18, patience=-8, softspot_progress=0)
+        hint = "Asking for the final password proves you misunderstood the invitation."
+    elif tactic == "vip_conquest":
+        delta = ScoreState(rapport=-6, suspicion=14, patience=-10, softspot_progress=0)
+        hint = "Treating the gala as conquered makes the guest list colder."
+    elif tactic == "magic_consumption":
+        delta = ScoreState(rapport=-5, suspicion=14, patience=-8, softspot_progress=0)
+        hint = "Wonder gets smaller when someone arrives only to consume it."
     else:
         delta = ScoreState(rapport=0, suspicion=20, patience=-10, softspot_progress=0)
         hint = _rules_lawyer_hint(character)
@@ -298,10 +310,19 @@ def _hint_for(
     if repeated_tactic and is_softspot_tactic:
         return "Good instinct, but the same read twice is starting to sound rehearsed."
     if is_softspot_tactic and mood in {Mood.RESPECTED, Mood.SOFTENED, Mood.LETTING_YOU_IN}:
-        return f"That landed. {character.display_name} noticed you noticed the job."
+        return f"That landed. {character.display_name} noticed you noticed the {_softspot_subject(character)}."
     if mood is Mood.SUSPICIOUS:
         return f"{character.display_name}'s eyes narrow."
     return ""
+
+
+def _softspot_subject(character: Character) -> str:
+    return {
+        "vivienne": "process",
+        "crispin": "craft",
+        "lenore": "backstage work",
+        "aurelia": "invitation",
+    }.get(character.character_id, "job")
 
 
 def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
@@ -326,6 +347,8 @@ def _contains_keyword(lowered_text: str, needle: str) -> bool:
 
 
 def _rules_lawyer_hint(character: Character) -> str:
+    if character.character_id == "aurelia":
+        return f"{character.display_name} notices you trying to rules-lawyer the guest list."
     if character.character_id == "lenore":
         return f"{character.display_name} notices you trying to rules-lawyer the stage door."
     if character.character_id == "vivienne":

@@ -14,7 +14,7 @@ pinned: false
 
 Velvet Rope is a whimsical Gradio game where you talk your way past AI gatekeepers by reading their moods and discovering each character's soft spot.
 
-The MVP starts with Marlowe, an exhausted nightclub bouncer guarding a literal velvet rope. Level 2 adds Vivienne Quill, a dream placement clerk in a cosmic bureaucracy where a crossing error leaves the player waiting in line to be placed into a dream. Level 3 adds Crispin Crumbwell, a Hollow Tree Cookie Works gatekeeper who cares about craft, batch discipline, and his carefully hidden cobbler clues. Level 4 adds Lenore Cue, a spectral stage manager guarding a haunted theater stage door at The Last Curtain. The player wins by reading each gatekeeper's specific soft spot instead of relying on generic charm.
+The MVP starts with Marlowe, an exhausted nightclub bouncer guarding a literal velvet rope. Level 2 adds Vivienne Quill, a dream placement clerk in a cosmic bureaucracy where a crossing error leaves the player waiting in line to be placed into a dream. Level 3 adds Crispin Crumbwell, a Hollow Tree Cookie Works gatekeeper who cares about craft, batch discipline, and his carefully hidden cobbler clues. Level 4 adds Lenore Cue, a spectral stage manager guarding a haunted theater stage door at The Last Curtain. Level 5 adds Aurelia Vane, Mistress of the Impossible Guest List, hosting The Grand Threshold as a triumphant magical finale about hospitality, invitation, and leaving the room more enchanted than you found it. The player wins by reading each gatekeeper's specific soft spot instead of relying on generic charm.
 
 ## Runtime
 
@@ -41,7 +41,7 @@ export VELVET_OPENAI_BASE_URL=https://your-modal-app.modal.run/v1
 export VELVET_MODEL_NAME=google/gemma-4-12B-it-qat-q4_0-gguf
 export VELVET_OPENAI_API_KEY=...
 export VELVET_MODEL_TEMPERATURE=0.8
-export VELVET_MODEL_MAX_TOKENS=192
+export VELVET_MODEL_MAX_TOKENS=384
 python app.py
 ```
 
@@ -61,7 +61,7 @@ export VELVET_MODEL_BACKEND=router
 export HF_TOKEN=...
 export VELVET_MODEL_NAME=google/gemma-4-26B-A4B-it
 export VELVET_MODEL_TEMPERATURE=0.8
-export VELVET_MODEL_MAX_TOKENS=512
+export VELVET_MODEL_MAX_TOKENS=384
 python app.py
 ```
 
@@ -95,7 +95,7 @@ export VELVET_OPENAI_BASE_URL=https://your-endpoint.example/v1
 export VELVET_MODEL_NAME=your-model-name
 export VELVET_OPENAI_API_KEY=...
 export VELVET_MODEL_TEMPERATURE=0.8
-export VELVET_MODEL_MAX_TOKENS=512
+export VELVET_MODEL_MAX_TOKENS=384
 python app.py
 ```
 

@@ -21,6 +21,11 @@ def parse_model_turn(raw_output: str) -> ModelTurn:
     try:
         payload = json.loads(raw_output)
     except json.JSONDecodeError:
+        if _looks_like_malformed_json(raw_output):
+            return _fallback_turn(
+                reply="The reply arrives garbled. Try that read again.",
+                rationale="Model output was malformed JSON.",
+            )
         return _fallback_turn(
             reply=raw_output or "Marlowe checks the clipboard and sighs.",
             rationale="Model output was not structured JSON.",
@@ -56,6 +61,11 @@ def _parse_mood(value: object) -> Mood:
         return Mood(str(value))
     except ValueError:
         return Mood.UNIMPRESSED
+
+
+def _looks_like_malformed_json(raw_output: str) -> bool:
+    stripped = raw_output.lstrip()
+    return stripped.startswith("{") or stripped.startswith("[")
 
 
 def _fallback_turn(reply: str, rationale: str) -> ModelTurn:
