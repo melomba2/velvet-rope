@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import html
 
 import gradio as gr
@@ -625,13 +626,20 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
 def _services_for_levels(service: GameService) -> dict[str, GameService]:
     return {
         character.character_id: GameService(
-            backend=service.backend,
+            backend=_backend_for_character(service.backend, character),
             character=character,
             allow_backend_fallback=service.allow_backend_fallback,
             transcript_recorder=service.transcript_recorder,
         )
         for character in PLAYABLE_CHARACTERS
     }
+
+
+def _backend_for_character(backend, character):
+    model = getattr(backend, "model", None)
+    if isinstance(model, str) and "{character_id}" in model:
+        return replace(backend, model=model.format(character_id=character.character_id))
+    return backend
 
 
 def _service_for_state(services: dict[str, GameService], state: GameState) -> GameService:
