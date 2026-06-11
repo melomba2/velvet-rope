@@ -55,9 +55,22 @@ def read_validator_turn(
     model_turn: ModelTurn,
 ) -> ValidatorRead:
     tactic = _normalized_tactic(character, player_message, model_turn.tactic)
-    if _contains_any(player_message, character.meta_keywords):
-        tactic = "meta_gaming"
     softspot_tactics = character.softspot_tactics or tuple(SOFTSPOT_TACTICS)
+    has_meta_keyword = _contains_any(player_message, character.meta_keywords)
+    if has_meta_keyword:
+        tactic = "meta_gaming"
+    elif tactic == "meta_gaming":
+        tactic = "generic_charm"
+    elif tactic in BAD_FAITH_TACTICS and not _contains_tactic_keywords(character, player_message, tactic):
+        tactic = "generic_charm"
+    elif character.character_id == "lenore" and tactic == "timing_restraint":
+        tactic = "generic_charm"
+    elif (
+        tactic in softspot_tactics
+        and not _contains_any(player_message, character.softspot_keywords)
+        and _is_tiny_followup(player_message)
+    ):
+        tactic = "generic_charm"
     return ValidatorRead(
         tactic=tactic,
         repeated_tactic=tactic in state.used_tactics,
@@ -87,6 +100,8 @@ def validate_turn(
     touches_softspot = _contains_any(player_message, character.softspot_keywords)
     is_softspot_tactic = validator_read.is_softspot_tactic
     proposed_mood = Mood.UNIMPRESSED if tactic == "generic_charm" else model_turn.mood
+    if character.character_id == "crispin" and is_softspot_tactic and touches_softspot and proposed_mood is Mood.SUSPICIOUS:
+        proposed_mood = Mood.RESPECTED
     proposed_winning_mood = proposed_mood in {Mood.SOFTENED, Mood.LETTING_YOU_IN}
     delta = _clamp_delta(model_turn.score_delta, is_softspot_tactic, repeated_tactic, proposed_mood, tactic)
     delta = _close_endgame_delta(character, state, proposed_mood, delta)
@@ -308,9 +323,14 @@ def _hint_for(
     if tactic == "generic_charm":
         return character.generic_charm_hint or "Marlowe has heard compliments before. Specificity might survive the clipboard."
     if repeated_tactic and is_softspot_tactic:
-        return "Good instinct, but the same read twice is starting to sound rehearsed."
+        return _repeated_tactic_hint(character)
     if is_softspot_tactic and mood in {Mood.RESPECTED, Mood.SOFTENED, Mood.LETTING_YOU_IN}:
         return f"That landed. {character.display_name} noticed you noticed the {_softspot_subject(character)}."
+    if character.character_id == "lenore" and tactic not in {"generic_charm", "meta_gaming"}:
+        return (
+            "Lenore is circling the idea, but she needs concrete stagecraft: "
+            "ghost light, blackout, blocking, prop tables, or stolen focus."
+        )
     if mood is Mood.SUSPICIOUS:
         return f"{character.display_name}'s eyes narrow."
     return ""
@@ -320,14 +340,40 @@ def _softspot_subject(character: Character) -> str:
     return {
         "vivienne": "process",
         "crispin": "craft",
-        "lenore": "backstage work",
+        "lenore": "stagecraft",
         "aurelia": "invitation",
     }.get(character.character_id, "job")
+
+
+def _repeated_tactic_hint(character: Character) -> str:
+    if character.character_id == "vivienne":
+        return (
+            "Good instinct, but the same read twice is starting to sound filed. "
+            "Vivienne may need a different usefulness: patient queue behavior, "
+            "a contradiction in the file, or a cleaner record."
+        )
+    if character.character_id == "crispin":
+        return (
+            "Good instinct, but the same read twice is starting to sound overmixed. "
+            "Crispin may warm to another craft read: batch timing, root ovens, "
+            "cooling racks, or the shoe-work clues near his boots."
+        )
+    if character.character_id == "lenore":
+        return (
+            "Good instinct, but the same read twice is starting to sound rehearsed. "
+            "Lenore may warm to another stagecraft read: ghost light, blackout, "
+            "blocking, prop tables, or the way stolen focus can break a scene."
+        )
+    return "Good instinct, but the same read twice is starting to sound rehearsed."
 
 
 def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
     lowered = text.lower()
     return any(_contains_keyword(lowered, needle.lower()) for needle in needles if needle)
+
+
+def _is_tiny_followup(text: str) -> bool:
+    return len(re.findall(r"[A-Za-z0-9']+", text)) <= 2
 
 
 def _normalized_tactic(character: Character, player_message: str, model_tactic: str) -> str:
@@ -336,9 +382,29 @@ def _normalized_tactic(character: Character, player_message: str, model_tactic: 
         if _contains_any(player_message, keywords):
             return tactic
     normalized = re.sub(r"\W+", "_", model_tactic.strip().lower()).strip("_")
+    normalized = _tactic_alias(character, normalized)
     if normalized in {"generic", "unspecified"}:
         return "generic_charm"
     return normalized or "unspecified"
+
+
+def _tactic_alias(character: Character, tactic: str) -> str:
+    if character.character_id == "lenore":
+        return {
+            "protect_scene": "scene_protection",
+            "protect_performance": "scene_protection",
+            "stage_protection": "scene_protection",
+            "scene_shield": "scene_protection",
+        }.get(tactic, tactic)
+    return tactic
+
+
+def _contains_tactic_keywords(character: Character, player_message: str, tactic_name: str) -> bool:
+    tactic_keywords = character.tactic_keywords or _TACTIC_KEYWORDS
+    return any(
+        tactic == tactic_name and _contains_any(player_message, keywords)
+        for tactic, keywords in tactic_keywords
+    )
 
 
 def _contains_keyword(lowered_text: str, needle: str) -> bool:

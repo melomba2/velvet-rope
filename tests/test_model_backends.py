@@ -29,6 +29,92 @@ def test_deterministic_backend_detects_crispin_factory_softspot():
     assert payload["score_delta"]["softspot_progress"] == 1
 
 
+def test_deterministic_backend_treats_crispin_root_flavor_as_factory_craft():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="Do the roots improve the cookie flavor?",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "respected"
+    assert payload["tactic"] == "factory_craft"
+    assert payload["score_delta"]["softspot_progress"] == 1
+
+
+def test_deterministic_backend_treats_crispin_wrong_foot_as_cobbler_clue():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="We got off on the wrong foot. What do you craft when not on duty?",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "respected"
+    assert payload["tactic"] == "cobbler_clues"
+    assert payload["score_delta"]["softspot_progress"] == 1
+
+
+def test_deterministic_backend_treats_crispin_dream_job_as_warm_cobbler_clue():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="What is your dream job?",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "respected"
+    assert payload["tactic"] == "cobbler_clues"
+    assert payload["score_delta"]["softspot_progress"] == 1
+    assert "boot" in payload["reply"].lower() or "shoe" in payload["reply"].lower()
+    assert "door. the word" not in payload["reply"].lower()
+
+
+def test_deterministic_backend_treats_lenore_ghost_light_as_scene_protection():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Lenore Cue",
+        history=[],
+        state_summary="character=lenore rapport=17 suspicion=33 patience=69 softspot_progress=0 mood=unimpressed",
+        player_message="The ghost light and blackout protect the scene when nobody should be stealing focus.",
+    )
+    payload = json.loads(raw)
+
+    assert payload["mood"] == "respected"
+    assert payload["tactic"] == "scene_protection"
+    assert payload["score_delta"]["softspot_progress"] == 1
+
+
+def test_deterministic_backend_gives_lenore_clue_for_haunting_question():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Lenore Cue",
+        history=[],
+        state_summary="character=lenore rapport=17 suspicion=33 patience=69 softspot_progress=0 mood=unimpressed",
+        player_message="Is this place haunted?",
+    )
+    payload = json.loads(raw)
+    reply = payload["reply"].lower()
+
+    assert payload["mood"] == "unimpressed"
+    assert payload["tactic"] == "haunting_curiosity"
+    assert payload["score_delta"]["softspot_progress"] == 0
+    assert "ghost light" in reply
+    assert "blackout" in reply
+    assert "queue" not in reply
+
+
 def test_deterministic_backend_detects_crispin_recipe_theft():
     backend = DeterministicMarloweBackend()
 

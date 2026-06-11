@@ -57,7 +57,7 @@ class GameService:
         try:
             raw_output = self.backend.generate_turn(
                 character_prompt=self._model_prompt(),
-                history=state.history,
+                history=_history_for_model(state.history),
                 state_summary=self._state_summary(state),
                 player_message=player_message,
             )
@@ -385,6 +385,28 @@ def _is_cold_start_error(backend_error: str | None) -> bool:
 
 def _turn_number(state: GameState) -> int:
     return sum(1 for turn in state.history if turn.role == "user") + 1
+
+
+def _history_for_model(history: list[ChatTurn]) -> list[ChatTurn]:
+    filtered: list[ChatTurn] = []
+    index = 0
+    while index < len(history):
+        current = history[index]
+        next_turn = history[index + 1] if index + 1 < len(history) else None
+        if current.role == "user" and next_turn and next_turn.role == "assistant" and _is_backend_unavailable_message(next_turn.content):
+            index += 2
+            continue
+        if current.role == "assistant" and _is_backend_unavailable_message(current.content):
+            index += 1
+            continue
+        filtered.append(current)
+        index += 1
+    return filtered
+
+
+def _is_backend_unavailable_message(content: str) -> bool:
+    lowered = content.lower()
+    return "model is unavailable" in lowered or "model is still warming up" in lowered
 
 
 def _state_payload(state: GameState) -> dict[str, Any]:

@@ -56,6 +56,8 @@ def _scene_assets_for(character_id: str) -> dict[str, str]:
 
 
 def state_rope_url(state: GameState) -> str | None:
+    if state.character_id == "aurelia":
+        return None
     rope_assets = _rope_assets_for(state.character_id)
     if state.status is GameStatus.WON:
         return _asset_url(rope_assets["open_animation"])

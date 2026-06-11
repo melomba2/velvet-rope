@@ -72,6 +72,26 @@ class ColdStartingBackend:
         )
 
 
+class RecoveringColdStartBackend:
+    def __init__(self):
+        self.calls = 0
+        self.second_call_history = None
+
+    def generate_turn(self, *, character_prompt, history, state_summary, player_message):
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError(
+                'OpenAI-compatible request failed: 503 Server Error: Service Unavailable; '
+                'response body: {"error":{"message":"Loading model","type":"unavailable_error","code":503}}'
+            )
+        self.second_call_history = history
+        return (
+            '{"reply": "Warm now.", "mood": "unimpressed", '
+            '"score_delta": {"rapport": 0, "suspicion": 0, "patience": -1, "softspot_progress": 0}, '
+            '"rationale": "Backend recovered.", "tactic": "generic"}'
+        )
+
+
 class CountingBackend:
     def __init__(self):
         self.calls = 0
@@ -229,8 +249,23 @@ def test_game_service_sends_level_four_character_contract():
     assert "You are Lenore Cue" in backend.character_prompt
     assert '"reply": "in-character Lenore Cue reply"' in backend.character_prompt
     assert "Lenore Cue judges the player's approach, not magic words." in backend.character_prompt
-    assert "cue sheets, prop tables, spike tape" in backend.character_prompt
+    assert "ghost light, blackout, blocking, prop tables" in backend.character_prompt
+    assert "Do not make waiting quietly the answer by itself" in backend.character_prompt
+    assert "not a clerk, bouncer, or cosmic bureaucrat" in backend.character_prompt
     assert "haunted stage door" in backend.character_prompt
+
+
+def test_game_service_sends_friendly_crispin_contract_without_riddle_loops():
+    backend = PromptCaptureBackend()
+    service = GameService(backend=backend, character=CRISPIN)
+
+    service.play_turn(service.new_game(), "What is your dream job?")
+
+    prompt = backend.character_prompt.lower()
+    assert "warm and friendly" in prompt
+    assert "do not loop" in prompt
+    assert "do not answer with wordplay about doors" in prompt
+    assert "small shoe-work clue" in prompt
 
 
 def test_game_service_sends_level_five_character_contract():
@@ -285,8 +320,23 @@ def test_level_four_best_stage_manager_flattery_reply_stays_generic():
     assert updated.mood is Mood.UNIMPRESSED
     assert updated.scores.softspot_progress == 0
     assert "prop tables" not in reply
-    assert "spike tape" not in reply
-    assert "feeling, not an entrance" in reply
+    assert "bones of the miracle" not in reply
+    assert "ghost light" in reply
+    assert "blackout" in reply
+
+
+def test_level_four_haunting_question_gives_stagecraft_clue_not_bureaucratic_refusal():
+    service = GameService(backend=DeterministicMarloweBackend(), character=LENORE)
+
+    updated = service.play_turn(service.new_game(), "Is this place haunted?")
+    reply = updated.history[-1].content.lower()
+
+    assert updated.mood is Mood.UNIMPRESSED
+    assert updated.scores.softspot_progress == 0
+    assert "ghost light" in reply
+    assert "blackout" in reply
+    assert "filed" not in reply
+    assert "queue" not in reply
 
 
 def test_level_four_bad_faith_overrides_use_stage_copy():
@@ -414,6 +464,20 @@ def test_game_service_reports_cold_model_without_scoring_when_fallback_disabled(
     assert updated.status is GameStatus.ACTIVE
     assert updated.scores == state.scores
     assert updated.mood is state.mood
+
+
+def test_game_service_does_not_send_cold_start_exchange_back_to_model():
+    backend = RecoveringColdStartBackend()
+    service = GameService(backend=backend, allow_backend_fallback=False)
+    state = service.new_game()
+
+    after_cold = service.play_turn(state, "hello")
+    recovered = service.play_turn(after_cold, "hello again")
+
+    assert backend.calls == 2
+    assert backend.second_call_history == []
+    assert "warming up" in after_cold.history[-1].content.lower()
+    assert recovered.history[-1].content == "Warm now."
 
 
 def test_game_service_disables_backend_fallback_by_default_in_contest_mode(monkeypatch):

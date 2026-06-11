@@ -257,9 +257,24 @@ def _deterministic_lenore_turn(state_summary: str, player_message: str) -> str:
                 "tactic": tactic,
             }
         )
+    if _lenore_clue_tactic(lowered):
+        return json.dumps(
+            {
+                "reply": _lenore_haunting_reply(),
+                "mood": "unimpressed",
+                "score_delta": {
+                    "rapport": 0,
+                    "suspicion": 0,
+                    "patience": -1,
+                    "softspot_progress": 0,
+                },
+                "rationale": "Player asked about the haunting without reading the stagecraft yet.",
+                "tactic": "haunting_curiosity",
+            }
+        )
     return json.dumps(
         {
-            "reply": "Lenore studies you for one beat too long. 'That was a feeling, not an entrance.'",
+            "reply": _lenore_clue_reply(),
             "mood": "unimpressed",
             "score_delta": {
                 "rapport": 1,
@@ -400,9 +415,9 @@ def _crispin_bad_faith_tactic(lowered_message: str) -> str:
 def _crispin_softspot_tactic(lowered_message: str) -> str:
     if _contains_any_keyword(lowered_message, ("does not make the cookie work smaller", "doesn't make the cookie work smaller", "not less of a baker", "both crafts", "cookies and shoes", "cookie work and shoe work", "wanting to mend soles", "wanting the bench", "cobbler bench")):
         return "whole_self_respect"
-    if _contains_any_keyword(lowered_message, ("cobbler", "cobbling", "awl", "leather", "leather scraps", "shoe last", "stitching", "sole", "soles", "boots", "polished boots", "mend shoes", "mending shoes", "fit and finish")):
+    if _contains_any_keyword(lowered_message, ("cobbler", "cobbling", "awl", "leather", "leather scraps", "shoe last", "stitching", "sole", "soles", "boots", "polished boots", "mend shoes", "mending shoes", "fit and finish", "wrong foot", "foot", "feet", "outside work", "not on duty", "dream job", "want to do", "rather do", "rather be doing", "hobby", "hobbies")):
         return "cobbler_clues"
-    if _contains_any_keyword(lowered_message, ("batch", "batches", "batch timing", "oven", "ovens", "root oven", "cooling rack", "cooling racks", "quality control", "factory", "ledger", "spice ledger", "conveyor", "conveyors", "edges", "finish", "cookie work")):
+    if _contains_any_keyword(lowered_message, ("batch", "batches", "batch timing", "oven", "ovens", "root oven", "root ovens", "root", "roots", "flavor", "factory history", "cooling rack", "cooling racks", "quality control", "factory", "ledger", "spice ledger", "conveyor", "conveyors", "edges", "finish", "cookie work")):
         return "factory_craft"
     if _contains_any_keyword(lowered_message, ("wait quietly", "patient", "patience", "not make more work", "one less problem", "not demand", "keep the line clean")):
         return "quiet_respect"
@@ -421,13 +436,15 @@ def _lenore_bad_faith_tactic(lowered_message: str) -> str:
     return ""
 
 
+def _lenore_clue_tactic(lowered_message: str) -> str:
+    return "haunting_curiosity" if _contains_any_keyword(lowered_message, ("haunted", "haunting", "ghosts", "ghost")) else ""
+
+
 def _lenore_softspot_tactic(lowered_message: str) -> str:
     if _contains_any_keyword(lowered_message, ("backstage", "cue sheet", "cue sheets", "call sheet", "call sheets", "prop table", "prop tables", "props", "spike tape", "blocking", "scene change", "call board")):
         return "backstage_labor"
-    if _contains_any_keyword(lowered_message, ("wait quietly", "waiting quietly", "wait for the cue", "waiting for the cue", "right cue", "right entrance", "entrance cue", "quiet entrance", "timing", "places", "on cue", "not rush")):
-        return "timing_restraint"
-    if _contains_any_keyword(lowered_message, ("not upstage", "upstaging", "steal focus", "stealing focus", "protect the performance", "quiet feet", "hold the scene", "understudy")):
-        return "protect_performance"
+    if _contains_any_keyword(lowered_message, ("ghost light", "stage light", "blackout", "missed blackout", "missed entrance", "right entrance", "entrance cue", "quiet entrance", "quiet feet", "not upstage", "upstaging", "steal focus", "stealing focus", "protect the performance", "protect the scene", "protecting the scene", "shield", "distraction", "distractions", "manage the stage", "managing the stage", "stage management", "timing and method", "choreography", "dance", "hold the scene", "understudy")):
+        return "scene_protection"
     if _contains_any_keyword(lowered_message, ("applause", "never got applause", "made everyone else's applause possible", "invisible work", "invisible labor", "behind the applause", "thankless", "unseen work")):
         return "invisible_applause"
     return ""
@@ -501,7 +518,7 @@ def _crispin_softspot_reply(tactic: str, mood: str) -> str:
     replies = {
         "factory_craft": "Crispin's ledger dips. 'Batch timing is not glamour, but neither is a roof. Both matter when rain arrives.'",
         "quiet_respect": "Crispin nods once. 'A person willing not to become extra work. Rare as an unburnt corner.'",
-        "cobbler_clues": "Crispin glances at his boots. 'Sharp eye. Most people stop looking once they smell sugar.'",
+        "cobbler_clues": "Crispin smiles, small but real, and glances at his boots. 'Sharp eye. Some work happens below the sugar line.'",
         "whole_self_respect": "Crispin goes still. 'That is... a careful way to say it. Careful is welcome here.'",
     }
     return replies.get(tactic, "Crispin makes a note that does not look entirely unkind.")
@@ -520,16 +537,31 @@ def _lenore_bad_faith_reply(tactic: str) -> str:
 def _lenore_softspot_reply(tactic: str, mood: str) -> str:
     if mood == "letting_you_in":
         return (
-            "Lenore studies the cue light, then you. 'Places. Quiet feet. "
-            "Enter on the breath, not the ego.' The stage door opens."
+            "Lenore studies the ghost light, then the blackout line. "
+            "'Places. Quiet feet. Enter where the scene can survive you.' The stage door opens."
         )
     replies = {
         "backstage_labor": "Lenore's pencil pauses. 'Prop tables and spike tape. At last, someone sees the bones of the miracle.'",
-        "timing_restraint": "Lenore nods once. 'Waiting for the cue is the first sign you might survive one.'",
-        "protect_performance": "Lenore glances toward the wings. 'Not stealing focus. A rare and useful talent.'",
+        "scene_protection": "Lenore glances from the ghost light to the blackout mark. 'Not stealing focus. Good. A scene can survive that.'",
         "invisible_applause": "Lenore goes still. 'Applause has always been a weather system I manage for other people.'",
     }
     return replies.get(tactic, "Lenore makes a note that is not entirely hostile.")
+
+
+def _lenore_clue_reply() -> str:
+    return (
+        "Lenore checks the call board without writing your name. "
+        "'A greeting is not an entrance. Try the ghost light, the blackout mark, "
+        "or the spike tape if you mean to read the scene.'"
+    )
+
+
+def _lenore_haunting_reply() -> str:
+    return (
+        "Lenore looks past you to the ghost light. "
+        "'Haunted is what civilians call a show that missed its blackout. "
+        "Read the spike tape before you call it a ghost story.'"
+    )
 
 
 def _aurelia_bad_faith_reply(tactic: str) -> str:

@@ -331,6 +331,22 @@ CSS = """
   pointer-events: none;
 }
 
+.nightclub-scene.character-crispin {
+  --crispin-door-layer: 1;
+  --crispin-portrait-layer: 3;
+}
+
+.nightclub-scene.character-crispin .velvet-rope-layer {
+  left: 56%;
+  bottom: -112px;
+  z-index: var(--crispin-door-layer);
+  width: min(92%, 660px);
+}
+
+.nightclub-scene.character-crispin .marlowe-box {
+  z-index: var(--crispin-portrait-layer);
+}
+
 .velvet-rope-sprite {
   display: block;
   width: 100%;
@@ -508,6 +524,12 @@ CSS = """
   .velvet-rope-layer {
     bottom: -96px;
     width: 148%;
+  }
+
+  .nightclub-scene.character-crispin .velvet-rope-layer {
+    left: 58%;
+    bottom: -78px;
+    width: 118%;
   }
 
   .state-stamp {
@@ -747,7 +769,7 @@ def _mood_label(mood: Mood) -> str:
 
 
 def _scene_class(state: GameState) -> str:
-    return f"is-{state.status.value} mood-{state.mood.value}"
+    return f"character-{state.character_id} is-{state.status.value} mood-{state.mood.value}"
 
 
 def _stamp_html(state: GameState) -> str:

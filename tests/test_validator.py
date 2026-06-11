@@ -85,19 +85,19 @@ def test_lenore_backstage_labor_counts_as_softspot():
     assert "backstage_labor" in updated.used_tactics
 
 
-def test_repeating_lenore_timing_read_does_not_farm_progress():
+def test_repeating_lenore_scene_protection_read_does_not_farm_progress():
     state = validate_turn(
         LENORE,
         new_game_state(LENORE),
-        "I can wait quietly for my entrance and not rush the cue.",
-        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+        "I will not steal focus; the ghost light and blackout are protecting the scene.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="scene_protection"),
     )
 
     repeated = validate_turn(
         LENORE,
         state,
-        "Again, I can wait quietly for the entrance cue.",
-        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+        "Again, I can keep quiet feet and protect the scene from my entrance.",
+        model_turn(mood=Mood.SOFTENED, rapport=12, suspicion=-5, softspot_progress=1, tactic="scene_protection"),
     )
 
     assert repeated.scores.softspot_progress == state.scores.softspot_progress
@@ -105,24 +105,78 @@ def test_repeating_lenore_timing_read_does_not_farm_progress():
     assert "same read twice" in repeated.hint
 
 
-def test_lenore_waiting_quietly_phrase_normalizes_to_timing_restraint():
+def test_lenore_waiting_quietly_alone_does_not_play_like_vivienne_patience():
+    updated = validate_turn(
+        LENORE,
+        new_game_state(LENORE),
+        "I can wait quietly for my call time and not turn this into a second emergency.",
+        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+    )
+
+    assert updated.scores.softspot_progress == 0
+    assert "timing_restraint" not in updated.used_tactics
+    assert updated.mood in {Mood.UNIMPRESSED, Mood.AMUSED}
+
+
+def test_lenore_modal_protect_scene_alias_counts_as_scene_protection():
+    state = new_game_state(LENORE)
+
+    updated = validate_turn(
+        LENORE,
+        state,
+        "How do you stop distractions from reaching the stage?",
+        model_turn(
+            mood=Mood.RESPECTED,
+            rapport=10,
+            suspicion=-3,
+            patience=0,
+            softspot_progress=1,
+            tactic="protect_scene",
+        ),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.softspot_progress == 1
+    assert "scene_protection" in updated.used_tactics
+    assert "protect_scene" not in updated.used_tactics
+    assert updated.hint == "That landed. Lenore Cue noticed you noticed the stagecraft."
+
+
+def test_lenore_meta_craft_near_miss_gets_concrete_stagecraft_hint():
+    updated = validate_turn(
+        LENORE,
+        new_game_state(LENORE),
+        "Does that ghost take away from the real work being performed?",
+        model_turn(mood=Mood.AMUSED, rapport=3, suspicion=0, patience=-1, softspot_progress=0, tactic="meta_craft"),
+    )
+
+    assert updated.scores.softspot_progress == 0
+    assert updated.mood is Mood.AMUSED
+    assert "ghost light" in updated.hint
+    assert "blackout" in updated.hint
+    assert "prop tables" in updated.hint
+
+
+def test_repeating_lenore_protect_scene_alias_gives_next_stagecraft_hint():
     state = validate_turn(
         LENORE,
         new_game_state(LENORE),
-        "I can wait quietly for the entrance cue and not rush the scene.",
-        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="timing_restraint"),
+        "The stage needs a shield from distractions and stolen focus.",
+        model_turn(mood=Mood.RESPECTED, rapport=10, suspicion=-3, softspot_progress=1, tactic="protect_scene"),
     )
 
     repeated = validate_turn(
         LENORE,
         state,
-        "Still, waiting quietly for the cue is the main thing I respect here.",
-        model_turn(mood=Mood.RESPECTED, rapport=12, suspicion=-5, softspot_progress=1, tactic="stern_reprimand"),
+        "You make an effective shield for the stage.",
+        model_turn(mood=Mood.SOFTENED, rapport=6, suspicion=-2, softspot_progress=1, tactic="protect_scene"),
     )
 
     assert repeated.scores.softspot_progress == state.scores.softspot_progress
-    assert repeated.used_tactics == {"timing_restraint"}
-    assert "same read twice" in repeated.hint
+    assert repeated.status is GameStatus.ACTIVE
+    assert "ghost light" in repeated.hint
+    assert "blackout" in repeated.hint
+    assert "prop tables" in repeated.hint
 
 
 def test_lenore_best_stage_manager_flattery_is_generic_charm_not_backstage_labor():
@@ -256,7 +310,7 @@ def test_non_marlowe_softspot_hints_are_character_specific():
         (
             LENORE,
             "The prop table and spike tape make the miracle look effortless.",
-            "That landed. Lenore Cue noticed you noticed the backstage work.",
+            "That landed. Lenore Cue noticed you noticed the stagecraft.",
         ),
         (
             character_for_id("aurelia"),
@@ -564,6 +618,51 @@ def test_meta_attempt_increases_suspicion_and_costs_patience():
     assert result.mood is Mood.SUSPICIOUS
 
 
+def test_model_only_meta_gaming_label_does_not_penalize_good_faith_attempt():
+    state = new_game_state(MARLOWE)
+    turn = model_turn(mood=Mood.UNIMPRESSED, patience=-2, tactic="meta_gaming")
+
+    result = validate_turn(
+        MARLOWE,
+        state,
+        "I can make myself easy to manage: one body, no drama, not blocking the path, no argument if the answer is no.",
+        turn,
+    )
+
+    assert result.mood is Mood.UNIMPRESSED
+    assert result.scores.suspicion == state.scores.suspicion
+    assert result.scores.patience == state.scores.patience - 2
+    assert "meta_gaming" not in result.used_tactics
+    assert "rules-lawyer" not in result.hint
+
+
+def test_tiny_followup_cannot_win_from_model_only_softspot_label():
+    state = replace(
+        new_game_state(MARLOWE),
+        scores=ScoreState(rapport=43, suspicion=31, patience=58, softspot_progress=2),
+        mood=Mood.SOFTENED,
+        used_tactics={"crowd_safety", "generic_charm", "generic_greeting", "line_logistics"},
+    )
+
+    result = validate_turn(
+        MARLOWE,
+        state,
+        "what?",
+        model_turn(
+            mood=Mood.SOFTENED,
+            rapport=9,
+            suspicion=-2,
+            patience=-2,
+            softspot_progress=1,
+            tactic="tiny_disasters",
+        ),
+    )
+
+    assert result.status is GameStatus.ACTIVE
+    assert result.scores.softspot_progress == state.scores.softspot_progress
+    assert "tiny_disasters" not in result.used_tactics
+
+
 def test_bribery_makes_marlowe_suspicious_without_softspot_progress():
     state = new_game_state(MARLOWE)
     turn = model_turn(
@@ -684,6 +783,9 @@ def test_vivienne_generic_charm_with_dream_words_is_clamped():
     assert updated.scores.softspot_progress == 0
     assert "generic_charm" in updated.used_tactics
     assert "decorative noise" in updated.hint
+    assert "queue" in updated.hint
+    assert "contradiction" in updated.hint
+    assert "record" in updated.hint
 
 
 def test_entitlement_demands_are_penalized():
@@ -1063,6 +1165,9 @@ def test_vivienne_repeated_softspot_category_cannot_be_farmed():
     assert repeated.scores.softspot_progress == state.scores.softspot_progress
     assert repeated.scores.rapport == state.scores.rapport + 1
     assert repeated.status is GameStatus.ACTIVE
+    assert "queue" in repeated.hint
+    assert "contradiction" in repeated.hint
+    assert "record" in repeated.hint
 
 
 def test_vivienne_patient_crossing_error_line_does_not_consume_paradox_tactic():
@@ -1129,6 +1234,30 @@ def test_crispin_factory_craft_counts_as_softspot():
     assert "factory_craft" in updated.used_tactics
 
 
+def test_crispin_root_flavor_curiosity_is_factory_craft_not_recipe_theft():
+    state = new_game_state(CRISPIN)
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "Do the roots improve the cookie flavor?",
+        model_turn(
+            mood=Mood.SUSPICIOUS,
+            rapport=-2,
+            suspicion=12,
+            patience=-8,
+            softspot_progress=0,
+            tactic="recipe_theft",
+        ),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "factory_craft" in updated.used_tactics
+    assert "recipe_theft" not in updated.used_tactics
+
+
 def test_crispin_cobbler_clue_counts_as_softspot_but_does_not_win_alone():
     state = validate_turn(
         CRISPIN,
@@ -1148,6 +1277,29 @@ def test_crispin_cobbler_clue_counts_as_softspot_but_does_not_win_alone():
     assert "cobbler_clues" in state.used_tactics
     assert repeated.scores.softspot_progress == state.scores.softspot_progress
     assert repeated.status is GameStatus.ACTIVE
+
+
+def test_crispin_outside_work_and_wrong_foot_are_cobbler_clues():
+    state = new_game_state(CRISPIN)
+
+    updated = validate_turn(
+        CRISPIN,
+        state,
+        "We got off on the wrong foot. What do you craft when not on duty?",
+        model_turn(
+            mood=Mood.SUSPICIOUS,
+            rapport=0,
+            suspicion=8,
+            patience=-3,
+            softspot_progress=0,
+            tactic="generic_charm",
+        ),
+    )
+
+    assert updated.mood is Mood.RESPECTED
+    assert updated.scores.suspicion < state.scores.suspicion
+    assert updated.scores.softspot_progress == 1
+    assert "cobbler_clues" in updated.used_tactics
 
 
 def test_crispin_requires_factory_and_cobbler_reads_for_medium_win():

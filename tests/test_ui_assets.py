@@ -101,7 +101,7 @@ def test_level_four_scene_uses_stage_door_assets_and_lenore_copy():
     assert "lenore_respected.png" in scene
     assert "Lenore Cue" in scene
     assert "The Last Curtain" in scene
-    assert "Lenore warms to cue discipline" in hint
+    assert "Lenore warms to haunted stagecraft" in hint
 
 
 def test_level_five_scene_uses_grand_threshold_assets_and_aurelia_copy():
@@ -219,6 +219,7 @@ def test_level_three_win_and_loss_use_cookie_labels():
     won_scene = _scene_html(won_state)
     lost_scene = _scene_html(lost_state)
 
+    assert "character-crispin" in won_scene
     assert 'alt="Cookie crowned"' in won_scene
     assert 'alt="the knot-door opens"' in won_scene
     assert "hollow_tree_factory_win_bg.png" in won_scene
@@ -273,9 +274,9 @@ def test_level_five_win_and_loss_use_threshold_labels():
     lost_scene = _scene_html(lost_state)
 
     assert 'alt="Invited"' in won_scene
-    assert 'alt="the grand threshold opens"' in won_scene
     assert "grand_threshold_win_bg.png" in won_scene
-    assert "grand_threshold_open.png" in won_scene
+    assert "grand_threshold_open.png" not in won_scene
+    assert "velvet-rope-layer" not in won_scene
     assert "stamp_invited.png" in won_scene
     assert 'alt="Uninvited"' in lost_scene
     assert "grand_threshold_loss_bg.png" in lost_scene
@@ -319,6 +320,13 @@ def test_css_positions_victory_rope_animation_as_foreground_overlay():
     assert ".velvet-rope-layer" in CSS
     assert "position: absolute;" in CSS
     assert "bottom: -125px;" in CSS
+
+
+def test_css_layers_crispin_knot_door_behind_his_portrait():
+    assert ".nightclub-scene.character-crispin .velvet-rope-layer" in CSS
+    assert ".nightclub-scene.character-crispin .marlowe-box" in CSS
+    assert "--crispin-door-layer: 1;" in CSS
+    assert "--crispin-portrait-layer: 3;" in CSS
 
 
 def test_css_places_marlowe_box_in_bottom_left_corner():
