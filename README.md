@@ -28,17 +28,20 @@ Backend selection in the Space uses `VELVET_MODEL_BACKEND`. Supported values are
 
 `VELVET_BACKEND` is also accepted as a shorter alias, but do not set both in the Space. If both env vars are set, `VELVET_MODEL_BACKEND` wins so the current Space config remains the source of truth.
 
-### Modal 12B Runtime
+### Modal 12B LoRA Runtime
 
-The current 12B deployment path is a Modal-hosted OpenAI-compatible endpoint.
+The current 12B deployment path is a Modal-hosted OpenAI-compatible endpoint
+with one trained LoRA adapter per character. The app sends a per-character model
+name such as `velvet-marlowe` or `velvet-vivienne`; the Modal proxy applies the
+matching adapter and falls back to the base model for unknown names.
 The Hugging Face Space stays lightweight and calls Modal for inference, which
 avoids trying to run a 12B GGUF on Space CPU.
 
 ```bash
 export VELVET_CONTEST_MODE=1
 export VELVET_MODEL_BACKEND=openai-compatible
-export VELVET_OPENAI_BASE_URL=https://your-modal-app.modal.run/v1
-export VELVET_MODEL_NAME=google/gemma-4-12B-it-qat-q4_0-gguf
+export VELVET_OPENAI_BASE_URL=https://melomba2--velvet-llamacpp-lora-serve.modal.run/v1
+export VELVET_MODEL_NAME='velvet-{character_id}'
 export VELVET_OPENAI_API_KEY=...
 export VELVET_MODEL_TEMPERATURE=0.8
 export VELVET_MODEL_MAX_TOKENS=384
@@ -46,8 +49,11 @@ python app.py
 ```
 
 Inside the Hugging Face Space, store `VELVET_OPENAI_API_KEY` as a secret and
-the other values as Space variables. The Modal service is responsible for model
-loading, GPU selection, llama.cpp, and any future LoRA adapter strategy.
+the other values as Space variables. Store the literal value
+`velvet-{character_id}` for `VELVET_MODEL_NAME`; the app substitutes each
+playable character id when it creates that character's game service. The Modal
+service is responsible for model loading, GPU selection, llama.cpp, and LoRA
+adapter routing.
 
 ### Hugging Face Router / Inference Providers
 
@@ -103,7 +109,7 @@ python app.py
 
 The judging story should stay simple and conservative:
 
-- Current Modal model: [`google/gemma-4-12B-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-gguf), an unfine-tuned QAT GGUF serving experiment based on Gemma 4 12B.
+- Current Modal model: [`unsloth/gemma-4-12b-it-qat-GGUF`](https://huggingface.co/unsloth/gemma-4-12b-it-qat-GGUF), serving `gemma-4-12B-it-qat-UD-Q4_K_XL.gguf` with one small character LoRA adapter selected per turn.
 - Current reliable Router fallback: [`google/gemma-4-26B-A4B-it`](https://huggingface.co/google/gemma-4-26B-A4B-it), whose model card lists 25.2B total parameters and 3.8B active parameters.
 - Character specialization should use small LoRA adapter deltas over one shared base model, not one merged full model per character.
 
