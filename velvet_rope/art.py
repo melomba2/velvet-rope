@@ -9,7 +9,8 @@ from urllib.parse import quote
 from velvet_rope.state import GameState, GameStatus, Mood
 
 
-ART_ROOT = Path(__file__).resolve().parent / "static" / "art"
+STATIC_ROOT = Path(__file__).resolve().parent / "static"
+ART_ROOT = STATIC_ROOT / "art"
 MANIFEST_PATH = ART_ROOT / "manifest.json"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,7 +22,7 @@ def art_manifest() -> dict[str, Any]:
 
 
 def configure_gradio_static_paths(gradio_module: Any) -> None:
-    gradio_module.set_static_paths(paths=[ART_ROOT])
+    gradio_module.set_static_paths(paths=[STATIC_ROOT])
 
 
 def manifest_asset_paths() -> list[Path]:
@@ -48,6 +49,10 @@ def scene_background_url(state: GameState) -> str:
 
 def scene_asset_url(asset_key: str) -> str:
     return _asset_url(art_manifest()["scene_assets"][asset_key])
+
+
+def static_asset_url(relative_path: str) -> str:
+    return _path_url(_resolve_static_path(relative_path))
 
 
 def _scene_assets_for(character_id: str) -> dict[str, str]:
@@ -84,7 +89,10 @@ def _ui_assets_for(character_id: str) -> dict[str, str]:
 
 
 def _asset_url(relative_path: str) -> str:
-    path = _resolve_art_path(relative_path)
+    return _path_url(_resolve_art_path(relative_path))
+
+
+def _path_url(path: Path) -> str:
     try:
         public_path = path.relative_to(REPO_ROOT).as_posix()
     except ValueError:
@@ -97,6 +105,13 @@ def _resolve_art_path(relative_path: str) -> Path:
     path = (ART_ROOT / relative_path).resolve()
     if not path.is_relative_to(ART_ROOT):
         raise ValueError(f"Art manifest path escapes runtime art root: {relative_path}")
+    return path
+
+
+def _resolve_static_path(relative_path: str) -> Path:
+    path = (STATIC_ROOT / relative_path).resolve()
+    if not path.is_relative_to(STATIC_ROOT):
+        raise ValueError(f"Static path escapes runtime static root: {relative_path}")
     return path
 
 

@@ -12,6 +12,7 @@ from velvet_rope.art import (
     scene_background_url,
     state_rope_url,
     state_stamp_url,
+    static_asset_url,
 )
 from velvet_rope.characters import MARLOWE, PLAYABLE_CHARACTERS, character_for_id
 from velvet_rope.game import GameService
@@ -19,8 +20,33 @@ from velvet_rope.state import GameState, GameStatus, Mood
 
 
 CSS = """
+@font-face {
+  font-family: 'Jersey 10';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('__JERSEY_10_URL__') format('truetype');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('__PIXELIFY_REGULAR_URL__') format('truetype');
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('__PIXELIFY_BOLD_URL__') format('truetype');
+}
+
 :root {
   --vr-bg: #09090b;
+  --vr-ink: #050507;
   --vr-panel: #120d14;
   --vr-panel-2: #101014;
   --vr-rope: #b32735;
@@ -31,18 +57,40 @@ CSS = """
   --vr-danger: #b32735;
   --vr-success: #4f8f73;
   --vr-border: #2c2430;
+  --ui-panel-frame: url('__UI_PANEL_FRAME_URL__');
+  --ui-small-panel-frame: url('__UI_SMALL_PANEL_FRAME_URL__');
+  --ui-chat-bot-frame: url('__UI_CHAT_BOT_FRAME_URL__');
+  --ui-chat-player-frame: url('__UI_CHAT_PLAYER_FRAME_URL__');
+  --ui-button-normal-frame: url('__UI_BUTTON_NORMAL_FRAME_URL__');
+  --ui-button-hover-frame: url('__UI_BUTTON_HOVER_FRAME_URL__');
+  --ui-button-pressed-frame: url('__UI_BUTTON_PRESSED_FRAME_URL__');
+  --ui-input-frame: url('__UI_INPUT_FRAME_URL__');
+  --ui-dropdown-arrow: url('__UI_DROPDOWN_ARROW_URL__');
+  --ui-scroll-thumb: url('__UI_SCROLL_THUMB_URL__');
+  --ui-scroll-track: url('__UI_SCROLL_TRACK_URL__');
 }
 
 .gradio-container {
   background:
-    radial-gradient(circle at 18% 12%, rgba(214, 177, 94, 0.12), transparent 24rem),
-    linear-gradient(180deg, #09090b 0%, #0e080d 58%, #09090b 100%);
+    repeating-linear-gradient(0deg, rgba(247, 228, 168, 0.025) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, rgba(179, 39, 53, 0.045) 0 2px, transparent 2px 18px),
+    linear-gradient(180deg, #09090b 0%, #11090d 54%, #070708 100%);
   color: var(--vr-text-gold);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Pixelify Sans', ui-monospace, "SFMono-Regular", Menlo, monospace;
+  image-rendering: pixelated;
+  text-rendering: geometricPrecision;
 }
 
 .gradio-container .main {
   background: transparent;
+}
+
+.gradio-container .block,
+.gradio-container .form,
+.gradio-container .wrap,
+.gradio-container .wrapper,
+.gradio-container .chatbot {
+  border-radius: 5px !important;
 }
 
 #velvet-app {
@@ -61,22 +109,28 @@ CSS = """
 
 .rail-label {
   color: var(--vr-gold);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
+  font-size: 0.9rem;
+  font-weight: 400;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .velvet-header h1 {
   color: var(--vr-text-gold);
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
   font-size: clamp(2.2rem, 4.2vw, 3.65rem);
+  font-weight: 400;
   line-height: 0.92;
   margin: 0 0 4px;
+  text-shadow:
+    0 3px 0 var(--vr-ink),
+    3px 0 0 rgba(179, 39, 53, 0.42);
 }
 
 .velvet-header p {
   color: var(--vr-muted);
-  font-size: 0.94rem;
+  font-size: 1.05rem;
   line-height: 1.28;
   max-width: 620px;
   margin: 0;
@@ -88,13 +142,10 @@ CSS = """
   width: 340px;
   max-width: 340px;
   margin-left: auto;
-  padding: 8px 10px;
-  border: 1px solid rgba(214, 177, 94, 0.58);
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(18, 13, 20, 0.9), rgba(16, 16, 20, 0.86)),
-    radial-gradient(circle at 92% 18%, rgba(214, 177, 94, 0.16), transparent 8rem);
-  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.24);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .level-select-card > .gap {
@@ -103,6 +154,8 @@ CSS = """
 
 .level-select-card .wrap,
 .level-select-card .secondary-wrap,
+.level-select-card .block,
+.level-select-card .container,
 .level-select-card .form {
   background: transparent !important;
   border: 0 !important;
@@ -113,9 +166,52 @@ CSS = """
   margin: 0 !important;
 }
 
+.level-select-card .secondary-wrap {
+  background: var(--vr-ink) !important;
+  color: var(--vr-text-gold) !important;
+  border: 9px solid transparent !important;
+  border-image-source: var(--ui-input-frame) !important;
+  border-image-slice: 14 24 fill !important;
+  border-image-repeat: stretch !important;
+  border-radius: 3px !important;
+}
+
+.level-select-card input {
+  background: transparent !important;
+  color: var(--vr-text-gold) !important;
+  border: 0 !important;
+  border-image-source: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.level-select-card .icon-wrap {
+  color: var(--vr-gold) !important;
+  position: relative;
+}
+
+.level-select-card .dropdown-arrow {
+  opacity: 0;
+}
+
+.level-select-card .icon-wrap::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  background: var(--ui-dropdown-arrow) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
 .velvet-stage,
 .chat-panel {
-  border: 3px solid var(--vr-border);
+  border: 14px solid transparent;
+  border-image-source: var(--ui-panel-frame);
+  border-image-slice: 24 fill;
+  border-image-repeat: stretch;
   border-radius: 6px;
   background: rgba(18, 13, 20, 0.94);
   box-shadow:
@@ -205,7 +301,10 @@ CSS = """
 .door-plaque {
   max-width: min(62%, 440px);
   padding: 8px 10px;
-  border: 2px solid rgba(214, 177, 94, 0.52);
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(9, 9, 11, 0.82), rgba(18, 13, 20, 0.74)),
@@ -218,7 +317,9 @@ CSS = """
 
 .door-sign h2 {
   color: var(--vr-text-gold);
-  font-size: 1.3rem;
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
+  font-size: 1.7rem;
+  font-weight: 400;
   line-height: 1.1;
   margin: 0;
   text-shadow: 0 2px 0 #09090b;
@@ -233,13 +334,17 @@ CSS = """
 }
 
 .mood-badge {
-  border: 2px solid var(--vr-gold);
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
   border-radius: 8px;
   color: var(--vr-text-gold);
   background: rgba(16, 16, 20, 0.88);
   padding: 7px 9px;
-  font-size: 0.84rem;
-  font-weight: 800;
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
+  font-size: 1rem;
+  font-weight: 400;
   white-space: nowrap;
   box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.62);
 }
@@ -281,7 +386,10 @@ CSS = """
   width: clamp(224px, 38%, 340px);
   max-height: 96%;
   padding: 8px 8px 0;
-  border: 2px solid rgba(214, 177, 94, 0.5);
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
   border-radius: 8px 8px 0 0;
   background: linear-gradient(180deg, rgba(9, 9, 11, 0.58), rgba(9, 9, 11, 0.72));
   box-shadow: inset 0 0 0 2px rgba(9, 9, 11, 0.32), 0 16px 0 rgba(9, 9, 11, 0.18);
@@ -370,6 +478,9 @@ CSS = """
   flex: 1 1 auto !important;
   min-height: 245px !important;
   height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 #conversation-chatbot .wrapper,
@@ -382,6 +493,93 @@ CSS = """
   overflow-y: auto !important;
 }
 
+#conversation-chatbot .bubble-wrap::-webkit-scrollbar {
+  width: 18px;
+}
+
+#conversation-chatbot .bubble-wrap::-webkit-scrollbar-track {
+  background: var(--ui-scroll-track) center / 100% 100% repeat-y;
+  image-rendering: pixelated;
+}
+
+#conversation-chatbot .bubble-wrap::-webkit-scrollbar-thumb {
+  background: var(--ui-scroll-thumb) center / 100% 100% repeat-y;
+  image-rendering: pixelated;
+}
+
+#conversation-chatbot .wrapper,
+#conversation-chatbot .bubble-wrap {
+  background: transparent !important;
+  border: 0 !important;
+  border-image-source: none !important;
+  box-shadow: none !important;
+}
+
+#conversation-chatbot label.float {
+  top: -1px !important;
+  left: 10px !important;
+  padding: 3px 4px !important;
+  border: 0 !important;
+  border-image-source: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--vr-text-gold) !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase;
+}
+
+#conversation-chatbot .icon-button-wrapper,
+#conversation-chatbot .icon-button {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#conversation-chatbot .message-row {
+  margin: 10px 8px !important;
+}
+
+#conversation-chatbot .message {
+  border: 14px solid transparent !important;
+  border-image-slice: 24 fill !important;
+  border-image-repeat: stretch !important;
+  border-radius: 5px !important;
+  color: var(--vr-text-gold) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.48),
+    0 4px 0 rgba(0, 0, 0, 0.26) !important;
+}
+
+#conversation-chatbot .message.panel-full-width {
+  border: 0 !important;
+  border-image-source: none !important;
+  box-shadow: none !important;
+}
+
+#conversation-chatbot .bot.message {
+  border-image-source: var(--ui-chat-bot-frame) !important;
+  background:
+    linear-gradient(180deg, rgba(22, 19, 23, 0.98), rgba(13, 13, 17, 0.98)) !important;
+  border-color: rgba(214, 177, 94, 0.28) !important;
+}
+
+#conversation-chatbot .user.message {
+  border-image-source: var(--ui-chat-player-frame) !important;
+  background:
+    linear-gradient(180deg, rgba(36, 14, 20, 0.98), rgba(20, 10, 13, 0.98)) !important;
+  border-color: rgba(227, 66, 79, 0.42) !important;
+}
+
+#conversation-chatbot .message-content,
+#conversation-chatbot .prose,
+#conversation-chatbot .prose p {
+  color: var(--vr-text-gold) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.42 !important;
+}
+
 .read-room-panel {
   display: grid;
   grid-template-columns: 1fr;
@@ -389,7 +587,10 @@ CSS = """
   min-height: 86px;
   height: 100%;
   padding: 10px 12px;
-  border: 3px solid rgba(214, 177, 94, 0.62);
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
   border-radius: 5px;
   background:
     linear-gradient(180deg, rgba(26, 20, 24, 0.98), rgba(13, 13, 17, 0.98)),
@@ -402,14 +603,14 @@ CSS = """
 .read-room-panel h3 {
   color: var(--vr-text-gold);
   margin: 1px 0 2px;
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.15;
 }
 
 .read-room-panel p {
   color: var(--vr-muted);
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.94rem;
   line-height: 1.25;
 }
 
@@ -421,7 +622,10 @@ CSS = """
   align-items: stretch;
   margin-top: 10px;
   padding: 10px;
-  border: 3px solid rgba(214, 177, 94, 0.64);
+  border: 14px solid transparent;
+  border-image-source: var(--ui-panel-frame);
+  border-image-slice: 24 fill;
+  border-image-repeat: stretch;
   border-radius: 6px;
   background:
     linear-gradient(180deg, rgba(20, 14, 18, 0.98), rgba(8, 8, 10, 0.98)),
@@ -500,7 +704,10 @@ CSS = """
   height: 100%;
   padding: 12px 16px 12px 18px;
   overflow: hidden;
-  border: 3px solid var(--status-trim);
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
   border-radius: 5px;
   background:
     linear-gradient(180deg, rgba(9, 9, 11, 0.76), rgba(9, 9, 11, 0.88)),
@@ -545,7 +752,7 @@ CSS = """
   color: var(--vr-text-gold);
   margin-top: 3px;
   margin-bottom: 0;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
   line-height: 1.24;
 }
 
@@ -559,6 +766,14 @@ CSS = """
 .hud-input-stack .wrap,
 .hud-input-stack .form {
   margin: 0 !important;
+}
+
+.hud-input-stack .block,
+.hud-input-stack .container,
+.hud-input-stack .input-container {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 .hud-input-row {
@@ -575,17 +790,28 @@ CSS = """
 .gradio-container input {
   background: #0b0b0f !important;
   color: var(--vr-text-gold) !important;
-  border: 3px solid var(--vr-border) !important;
+  border: 10px solid transparent !important;
+  border-image-source: var(--ui-input-frame) !important;
+  border-image-slice: 14 24 fill !important;
+  border-image-repeat: stretch !important;
   border-radius: 5px !important;
   box-shadow:
     inset 0 0 0 2px rgba(0, 0, 0, 0.55),
     inset 0 -4px 0 rgba(0, 0, 0, 0.24) !important;
 }
 
+.gradio-container textarea::placeholder,
+.gradio-container input::placeholder {
+  color: rgba(183, 173, 146, 0.76) !important;
+}
+
 .gradio-container label,
 .gradio-container .block-title,
 .gradio-container .label-wrap span {
   color: var(--vr-muted) !important;
+  font-family: 'Pixelify Sans', ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
 }
 
 .gradio-container button.primary {
@@ -603,13 +829,40 @@ CSS = """
 .gradio-container button.primary,
 .gradio-container button.secondary {
   min-height: 42px !important;
-  border-width: 3px !important;
+  border: 12px solid transparent !important;
+  border-image-source: var(--ui-button-normal-frame) !important;
+  border-image-slice: 16 24 fill !important;
+  border-image-repeat: stretch !important;
   border-radius: 5px !important;
   box-shadow:
     inset 0 0 0 2px rgba(247, 228, 168, 0.1),
     0 4px 0 rgba(0, 0, 0, 0.34) !important;
-  font-weight: 900 !important;
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace !important;
+  font-size: 1.35rem !important;
+  font-weight: 400 !important;
   letter-spacing: 0 !important;
+}
+
+.gradio-container button.primary:hover,
+.gradio-container button.secondary:hover {
+  border-image-source: var(--ui-button-hover-frame) !important;
+  filter: brightness(1.12) saturate(1.08);
+  transform: translateY(-1px);
+}
+
+.gradio-container button.primary:active,
+.gradio-container button.secondary:active {
+  border-image-source: var(--ui-button-pressed-frame) !important;
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 0 0 2px rgba(247, 228, 168, 0.08),
+    0 2px 0 rgba(0, 0, 0, 0.34) !important;
+}
+
+.gradio-container .show-api,
+.gradio-container .settings,
+.gradio-container .record {
+  display: none !important;
 }
 
 .gradio-container footer {
@@ -720,7 +973,21 @@ CSS = """
     grid-template-columns: 1fr 0.55fr;
   }
 }
-""".replace("__DOOR_BG_URL__", scene_asset_url("door_background"))
+""".replace("__JERSEY_10_URL__", static_asset_url("fonts/Jersey10-Regular.ttf"))
+CSS = CSS.replace("__PIXELIFY_REGULAR_URL__", static_asset_url("fonts/PixelifySans-Regular.ttf"))
+CSS = CSS.replace("__PIXELIFY_BOLD_URL__", static_asset_url("fonts/PixelifySans-Bold.ttf"))
+CSS = CSS.replace("__UI_PANEL_FRAME_URL__", static_asset_url("ui/panel_frame_9slice.png"))
+CSS = CSS.replace("__UI_SMALL_PANEL_FRAME_URL__", static_asset_url("ui/small_panel_frame_9slice.png"))
+CSS = CSS.replace("__UI_CHAT_BOT_FRAME_URL__", static_asset_url("ui/chat_bubble_bot_9slice.png"))
+CSS = CSS.replace("__UI_CHAT_PLAYER_FRAME_URL__", static_asset_url("ui/chat_bubble_player_9slice.png"))
+CSS = CSS.replace("__UI_BUTTON_NORMAL_FRAME_URL__", static_asset_url("ui/button_normal_9slice.png"))
+CSS = CSS.replace("__UI_BUTTON_HOVER_FRAME_URL__", static_asset_url("ui/button_hover_9slice.png"))
+CSS = CSS.replace("__UI_BUTTON_PRESSED_FRAME_URL__", static_asset_url("ui/button_pressed_9slice.png"))
+CSS = CSS.replace("__UI_INPUT_FRAME_URL__", static_asset_url("ui/input_frame_9slice.png"))
+CSS = CSS.replace("__UI_DROPDOWN_ARROW_URL__", static_asset_url("ui/dropdown_arrow.png"))
+CSS = CSS.replace("__UI_SCROLL_THUMB_URL__", static_asset_url("ui/scroll_thumb_9slice.png"))
+CSS = CSS.replace("__UI_SCROLL_TRACK_URL__", static_asset_url("ui/scroll_track_9slice.png"))
+CSS = CSS.replace("__DOOR_BG_URL__", scene_asset_url("door_background"))
 CSS = CSS.replace("__WIN_BG_URL__", scene_asset_url("win_background"))
 CSS = CSS.replace("__LOSS_BG_URL__", scene_asset_url("loss_background"))
 

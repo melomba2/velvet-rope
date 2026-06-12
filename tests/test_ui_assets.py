@@ -2,9 +2,11 @@ from dataclasses import replace
 
 from velvet_rope.art import (
     ART_ROOT,
+    STATIC_ROOT,
     manifest_asset_paths,
     mood_sprite_url,
     scene_background_url,
+    static_asset_url,
     state_rope_url,
     state_stamp_url,
 )
@@ -19,6 +21,39 @@ def test_manifest_assets_are_local_to_runtime_art_root():
     assert paths
     assert all(path.is_file() for path in paths)
     assert all(path.is_relative_to(ART_ROOT) for path in paths)
+
+
+def test_local_font_assets_are_served_from_static_root():
+    font_paths = [
+        STATIC_ROOT / "fonts" / "Jersey10-Regular.ttf",
+        STATIC_ROOT / "fonts" / "PixelifySans-Regular.ttf",
+        STATIC_ROOT / "fonts" / "PixelifySans-Bold.ttf",
+    ]
+
+    assert all(path.is_file() for path in font_paths)
+    assert "velvet_rope/static/fonts/Jersey10-Regular.ttf" in static_asset_url("fonts/Jersey10-Regular.ttf")
+    assert "velvet_rope/static/fonts/PixelifySans-Regular.ttf" in static_asset_url("fonts/PixelifySans-Regular.ttf")
+    assert "velvet_rope/static/fonts/PixelifySans-Bold.ttf" in static_asset_url("fonts/PixelifySans-Bold.ttf")
+
+
+def test_local_ui_frame_assets_are_served_from_static_root():
+    ui_asset_names = [
+        "panel_frame_9slice.png",
+        "small_panel_frame_9slice.png",
+        "chat_bubble_bot_9slice.png",
+        "chat_bubble_player_9slice.png",
+        "button_normal_9slice.png",
+        "button_hover_9slice.png",
+        "button_pressed_9slice.png",
+        "input_frame_9slice.png",
+        "dropdown_arrow.png",
+        "scroll_thumb_9slice.png",
+        "scroll_track_9slice.png",
+    ]
+
+    assert all((STATIC_ROOT / "ui" / name).is_file() for name in ui_asset_names)
+    for name in ui_asset_names:
+        assert f"velvet_rope/static/ui/{name}" in static_asset_url(f"ui/{name}")
 
 
 def test_each_mood_maps_to_curated_marlowe_sprite_url():
@@ -412,6 +447,68 @@ def test_css_defines_full_width_retro_bottom_hud():
     assert "status_crispin_rope.png" in CSS
     assert "status_lenore_rope.png" in CSS
     assert "status_aurelia_rope.png" in CSS
+
+
+def test_css_skins_gradio_native_surfaces_as_retro_game_ui():
+    assert "font-family: 'Pixelify Sans'" in CSS
+    assert "font-family: 'Jersey 10'" in CSS
+    assert "#conversation-chatbot .bot.message" in CSS
+    assert "#conversation-chatbot .user.message" in CSS
+    assert "#conversation-chatbot label.float" in CSS
+    assert ".level-select-card input" in CSS
+    assert ".hud-input-stack .input-container" in CSS
+    assert ".gradio-container button.primary:hover" in CSS
+    assert ".gradio-container .show-api" in CSS
+    assert "text-transform: uppercase;" in CSS
+
+
+def test_css_uses_local_font_faces_without_remote_imports():
+    assert "@font-face" in CSS
+    assert "Jersey10-Regular.ttf" in CSS
+    assert "PixelifySans-Regular.ttf" in CSS
+    assert "PixelifySans-Bold.ttf" in CSS
+    assert "fonts.googleapis.com" not in CSS
+    assert "fonts.gstatic.com" not in CSS
+
+
+def test_css_applies_local_9slice_ui_frame_assets():
+    assert "panel_frame_9slice.png" in CSS
+    assert "small_panel_frame_9slice.png" in CSS
+    assert "chat_bubble_bot_9slice.png" in CSS
+    assert "chat_bubble_player_9slice.png" in CSS
+    assert "button_normal_9slice.png" in CSS
+    assert "button_hover_9slice.png" in CSS
+    assert "button_pressed_9slice.png" in CSS
+    assert "input_frame_9slice.png" in CSS
+    assert "dropdown_arrow.png" in CSS
+    assert "scroll_thumb_9slice.png" in CSS
+    assert "scroll_track_9slice.png" in CSS
+    assert "border-image-source" in CSS
+    assert "border-image-slice" in CSS
+    assert "border-image-repeat: stretch;" in CSS
+
+
+def test_css_avoids_redundant_nested_frames_in_selector_and_chat():
+    level_card_block = CSS.split(".level-select-card {", 1)[1].split("}", 1)[0]
+    chat_block = CSS.split("#conversation-chatbot {", 1)[1].split("}", 1)[0]
+    chat_wrapper_block = CSS.split("#conversation-chatbot .wrapper,\n#conversation-chatbot .bubble-wrap {\n  background: transparent", 1)[
+        1
+    ].split("}", 1)[0]
+    chat_label_block = CSS.split("#conversation-chatbot label.float {", 1)[1].split("}", 1)[0]
+
+    assert "border-image-source" not in level_card_block
+    assert "box-shadow: none;" in level_card_block
+    assert ".level-select-card input {" in CSS
+    assert "border: 0 !important;" in CSS.split(".level-select-card input {", 1)[1].split("}", 1)[0]
+    assert "border-image-source: var(--ui-input-frame)" in CSS.split(".level-select-card .secondary-wrap {", 1)[1].split("}", 1)[0]
+    assert "border-image-source: none !important;" in chat_wrapper_block
+    assert "border: 0 !important;" in chat_wrapper_block
+    assert "box-shadow: none !important;" in chat_wrapper_block
+    assert "background: transparent !important;" in chat_block
+    assert "border: 0 !important;" in chat_block
+    assert "box-shadow: none !important;" in chat_block
+    assert "border-image-source: none !important;" in chat_label_block
+    assert "#conversation-chatbot .message.panel-full-width" in CSS
 
 
 def test_chat_panel_keeps_input_controls_stacked_after_messages_render():
