@@ -323,8 +323,7 @@ class GameService:
         if _is_cold_start_error(backend_error):
             return (
                 f"{self.character.display_name}'s earpiece crackles. "
-                "The model is still warming up from a cold start, so the rope will not pretend "
-                "this was a real read. Try again in a moment."
+                "The model is still warming up from a cold start. Try again in a moment."
             )
         return (
             f"{self.character.display_name}'s earpiece crackles. "

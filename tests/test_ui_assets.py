@@ -1,4 +1,5 @@
 from dataclasses import replace
+import inspect
 
 from velvet_rope.art import (
     ART_ROOT,
@@ -11,8 +12,8 @@ from velvet_rope.art import (
     state_stamp_url,
 )
 from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE, character_for_id
-from velvet_rope.state import GameStatus, Mood, new_game_state
-from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html, _status_bar_html
+from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
+from velvet_rope.ui import CSS, build_app, _header_html, _progress_rope_html, _read_room_html, _scene_html, _status_bar_html
 
 
 def test_manifest_assets_are_local_to_runtime_art_root():
@@ -415,8 +416,8 @@ def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
     assert "__ROPE_ICON_URL__" not in CSS
     assert "level-select-card::before" not in CSS
     assert "justify-content: flex-end;" in CSS
-    assert "flex: 0 0 340px !important;" in CSS
-    assert "max-width: 340px;" in CSS
+    assert "flex: 0 0 390px !important;" in CSS
+    assert "max-width: 390px;" in CSS
 
 
 def test_status_bar_html_uses_character_status_and_classes():
@@ -435,11 +436,59 @@ def test_status_bar_html_uses_character_status_and_classes():
     assert "Somnolent Bureau" in status_bar
 
 
+def test_progress_rope_starts_one_third_full_and_tracks_level_theme():
+    progress = _progress_rope_html(new_game_state(MARLOWE))
+
+    assert "rope-progress character-marlowe" in progress
+    assert 'style="--rope-progress: 33%;"' in progress
+    assert "Progress 33%, soft spots 0 of 2" in progress
+    assert "rope-progress-track" in progress
+    assert progress.count("rope-progress-softspot") == MARLOWE.min_win_softspot_progress
+    assert "is-lit" not in progress
+
+
+def test_progress_rope_fills_from_rapport_and_lights_softspot_poles():
+    game_state = replace(
+        new_game_state(MARLOWE),
+        scores=ScoreState(
+            rapport=MARLOWE.win_rapport,
+            suspicion=20,
+            patience=70,
+            softspot_progress=2,
+        ),
+    )
+
+    progress = _progress_rope_html(game_state)
+
+    assert 'style="--rope-progress: 100%;"' in progress
+    assert "Progress 100%, soft spots 2 of 2" in progress
+    assert progress.count("is-lit") == 2
+
+
+def test_hud_centers_progress_rope_under_status_box():
+    source = inspect.getsource(build_app)
+    status_slot_body = source.split('elem_classes=["hud-status-slot"]):', 1)[1].split(
+        'elem_classes=["hud-input-stack"]):',
+        1,
+    )[0]
+    input_row_body = source.split('with gr.Row(elem_classes=["hud-input-row"]):', 1)[1].split("def render", 1)[0]
+
+    assert status_slot_body.index("status_bar = gr.HTML") < status_slot_body.index("progress_rope = gr.HTML")
+    assert "progress_rope = gr.HTML" not in input_row_body
+    assert input_row_body.index('send = gr.Button("Send"') < input_row_body.index('reset = gr.Button("Reset"')
+
+
 def test_css_defines_full_width_retro_bottom_hud():
     assert ".hud-console" in CSS
     assert ".hud-read-room" in CSS
     assert ".velvet-status-bar" in CSS
+    assert ".hud-progress-slot" in CSS
+    assert ".rope-progress" in CSS
+    assert ".rope-progress-fill" in CSS
+    assert ".rope-progress-softspot.is-lit" in CSS
     assert ".hud-input-row" in CSS
+    assert "grid-template-rows: minmax(86px, 1fr) 42px;" in CSS
+    assert "grid-template-columns: minmax(120px, 1fr) minmax(82px, 0.45fr);" in CSS
     assert "grid-column: 1 / -1;" in CSS
     assert "image-rendering: pixelated;" in CSS
     assert "status_marlowe_rope.png" in CSS
@@ -511,8 +560,79 @@ def test_css_avoids_redundant_nested_frames_in_selector_and_chat():
     assert "#conversation-chatbot .message.panel-full-width" in CSS
 
 
+def test_level_selector_keeps_arrow_centered_without_clipping_long_labels():
+    card_block = CSS.split(".level-select-card {", 1)[1].split("}", 1)[0]
+    secondary_block = CSS.split(".level-select-card .secondary-wrap {", 1)[1].split("}", 1)[0]
+    input_block = CSS.split(".level-select-card input {", 1)[1].split("}", 1)[0]
+    icon_block = CSS.split(".level-select-card .icon-wrap {", 1)[1].split("}", 1)[0]
+    arrow_block = CSS.split(".level-select-card .icon-wrap::after {", 1)[1].split("}", 1)[0]
+
+    assert "flex: 0 0 390px !important;" in card_block
+    assert "width: 390px;" in card_block
+    assert "max-width: 390px;" in card_block
+    assert "position: relative;" in secondary_block
+    assert "min-width: 0 !important;" in input_block
+    assert "padding-right: 22px !important;" in input_block
+    assert "position: absolute !important;" in icon_block
+    assert "right: 8px;" in icon_block
+    assert "top: 50%;" in icon_block
+    assert "transform: translateY(-50%) !important;" in icon_block
+    assert "inset: 0;" in arrow_block
+    assert "transform: none;" in arrow_block
+
+
 def test_chat_panel_keeps_input_controls_stacked_after_messages_render():
     chat_panel_block = CSS.split(".chat-panel {", 2)[2].split("}", 1)[0]
 
     assert "flex-direction: column;" in chat_panel_block
     assert "flex-wrap: nowrap" in chat_panel_block
+
+
+def test_stage_and_chat_panel_share_symmetrical_play_height():
+    shared_panel_block = CSS.split(".velvet-stage,\n.chat-panel {", 1)[1].split("}", 1)[0]
+    stage_wrapper_block = CSS.split(
+        ".velvet-stage .block,\n.velvet-stage .html-container,\n.velvet-stage .prose {",
+        1,
+    )[1].split("}", 1)[0]
+    scene_block = CSS.split(".nightclub-scene {", 1)[1].split("}", 1)[0]
+    chat_panel_block = CSS.split(".chat-panel {", 2)[2].split("}", 1)[0]
+    chatbot_block = CSS.split("#conversation-chatbot {", 1)[1].split("}", 1)[0]
+
+    assert "height: min(calc(100vh - 150px), 500px);" in shared_panel_block
+    assert "box-sizing: border-box;" in shared_panel_block
+    assert "height: 100% !important;" in stage_wrapper_block
+    assert "min-height: 0 !important;" in stage_wrapper_block
+    assert "height: 100%;" in scene_block
+    assert "height: auto !important;" not in chatbot_block
+    assert "height: 100% !important;" in chatbot_block
+    assert "height: calc(100vh - 150px);" not in chat_panel_block
+
+
+def test_chatbot_hides_native_scrollbars_around_custom_pixel_scroller():
+    native_scrollbar_block = CSS.split(
+        "#conversation-chatbot::-webkit-scrollbar,\n"
+        "#conversation-chatbot .wrapper::-webkit-scrollbar,\n"
+        "#conversation-chatbot .chatbot-container::-webkit-scrollbar {",
+        1,
+    )[1].split("}", 1)[0]
+    wrapper_block = CSS.split(
+        "#conversation-chatbot .wrapper,\n#conversation-chatbot .chatbot-container {",
+        1,
+    )[1].split("}", 1)[0]
+
+    assert "overflow: hidden !important;" in wrapper_block
+    assert "display: none;" in native_scrollbar_block
+    assert "#conversation-chatbot .bubble-wrap::-webkit-scrollbar" in CSS
+
+
+def test_send_and_reset_use_distinct_action_colors():
+    primary_block = CSS.split(".gradio-container button.primary {", 1)[1].split("}", 1)[0]
+    secondary_block = CSS.split(".gradio-container button.secondary {", 1)[1].split("}", 1)[0]
+    secondary_frame_override = CSS.rsplit(".gradio-container button.secondary {", 1)[1].split("}", 1)[0]
+
+    assert "background: var(--vr-rope) !important;" in primary_block
+    assert "background: var(--vr-ink) !important;" in secondary_block
+    assert "border-color: var(--vr-gold) !important;" in secondary_block
+    assert "border-image-slice: 16 24 !important;" in secondary_frame_override
+    assert "border-image-slice: 16 24 fill !important;" not in secondary_frame_override
+    assert primary_block != secondary_block

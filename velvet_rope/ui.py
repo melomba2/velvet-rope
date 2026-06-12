@@ -138,9 +138,9 @@ CSS = """
 
 .level-select-card {
   position: relative;
-  flex: 0 0 340px !important;
-  width: 340px;
-  max-width: 340px;
+  flex: 0 0 390px !important;
+  width: 390px;
+  max-width: 390px;
   margin-left: auto;
   padding: 0;
   border: 0;
@@ -167,6 +167,7 @@ CSS = """
 }
 
 .level-select-card .secondary-wrap {
+  position: relative;
   background: var(--vr-ink) !important;
   color: var(--vr-text-gold) !important;
   border: 9px solid transparent !important;
@@ -177,6 +178,8 @@ CSS = """
 }
 
 .level-select-card input {
+  min-width: 0 !important;
+  padding-right: 22px !important;
   background: transparent !important;
   color: var(--vr-text-gold) !important;
   border: 0 !important;
@@ -186,8 +189,14 @@ CSS = """
 }
 
 .level-select-card .icon-wrap {
+  position: absolute !important;
+  right: 8px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%) !important;
+  pointer-events: none;
   color: var(--vr-gold) !important;
-  position: relative;
 }
 
 .level-select-card .dropdown-arrow {
@@ -197,17 +206,18 @@ CSS = """
 .level-select-card .icon-wrap::after {
   content: "";
   position: absolute;
-  right: 2px;
-  top: 50%;
+  inset: 0;
   width: 16px;
   height: 16px;
-  transform: translateY(-50%);
+  transform: none;
   background: var(--ui-dropdown-arrow) center / contain no-repeat;
   image-rendering: pixelated;
 }
 
 .velvet-stage,
 .chat-panel {
+  box-sizing: border-box;
+  height: min(calc(100vh - 150px), 500px);
   border: 14px solid transparent;
   border-image-source: var(--ui-panel-frame);
   border-image-slice: 24 fill;
@@ -225,11 +235,25 @@ CSS = """
   min-height: 0;
 }
 
+.velvet-stage .block,
+.velvet-stage .html-container,
+.velvet-stage .prose {
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.velvet-stage .block {
+  overflow: hidden !important;
+}
+
 .nightclub-scene {
   position: relative;
-  min-height: min(54vh, 500px);
-  height: calc(100vh - 150px);
-  max-height: 500px;
+  box-sizing: border-box;
+  min-height: 0;
+  height: 100%;
+  max-height: none;
   padding: 14px 14px 0;
   isolation: isolate;
   background:
@@ -461,8 +485,6 @@ CSS = """
   gap: 8px;
   padding: 10px;
   min-height: 0;
-  height: calc(100vh - 150px);
-  max-height: 500px;
   background:
     linear-gradient(180deg, rgba(18, 13, 20, 0.96), rgba(9, 9, 11, 0.98));
 }
@@ -477,10 +499,16 @@ CSS = """
 #conversation-chatbot {
   flex: 1 1 auto !important;
   min-height: 245px !important;
-  height: auto !important;
+  height: 100% !important;
+  overflow: hidden !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+}
+
+#conversation-chatbot .wrapper,
+#conversation-chatbot .chatbot-container {
+  overflow: hidden !important;
 }
 
 #conversation-chatbot .wrapper,
@@ -491,6 +519,12 @@ CSS = """
 
 #conversation-chatbot .bubble-wrap {
   overflow-y: auto !important;
+}
+
+#conversation-chatbot::-webkit-scrollbar,
+#conversation-chatbot .wrapper::-webkit-scrollbar,
+#conversation-chatbot .chatbot-container::-webkit-scrollbar {
+  display: none;
 }
 
 #conversation-chatbot .bubble-wrap::-webkit-scrollbar {
@@ -657,39 +691,53 @@ CSS = """
   box-shadow: none !important;
 }
 
-.velvet-status-bar {
+.hud-status-slot {
+  display: grid !important;
+  grid-template-rows: minmax(86px, 1fr) 42px;
+  gap: 8px;
+}
+
+.velvet-status-bar,
+.rope-progress {
   --status-main: #7f1c2a;
   --status-edge: #b32735;
   --status-trim: #d6b15e;
   --status-shadow: #09090b;
   --future-status-asset: "assets/status_marlowe_rope.png";
+}
+
+.velvet-status-bar {
   height: 100%;
   min-height: 86px;
   image-rendering: pixelated;
 }
 
-.velvet-status-bar.character-vivienne {
+.velvet-status-bar.character-vivienne,
+.rope-progress.character-vivienne {
   --status-main: #473061;
   --status-edge: #866bc1;
   --status-trim: #d6b15e;
   --future-status-asset: "assets/status_vivienne_rope.png";
 }
 
-.velvet-status-bar.character-crispin {
+.velvet-status-bar.character-crispin,
+.rope-progress.character-crispin {
   --status-main: #6b2f16;
   --status-edge: #d18a39;
   --status-trim: #f0c874;
   --future-status-asset: "assets/status_crispin_rope.png";
 }
 
-.velvet-status-bar.character-lenore {
+.velvet-status-bar.character-lenore,
+.rope-progress.character-lenore {
   --status-main: #451523;
   --status-edge: #c72f44;
   --status-trim: #f0d178;
   --future-status-asset: "assets/status_lenore_rope.png";
 }
 
-.velvet-status-bar.character-aurelia {
+.velvet-status-bar.character-aurelia,
+.rope-progress.character-aurelia {
   --status-main: #173f37;
   --status-edge: #4f8f73;
   --status-trim: #e6c66d;
@@ -754,6 +802,102 @@ CSS = """
   margin-bottom: 0;
   font-size: 0.94rem;
   line-height: 1.24;
+}
+
+.hud-progress-slot,
+.hud-progress-slot .form,
+.hud-progress-slot .block,
+.hud-progress-slot .container {
+  min-width: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.hud-progress-slot {
+  align-self: stretch;
+  min-height: 42px;
+}
+
+.hud-progress-slot .html-container,
+.hud-progress-slot .prose {
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.rope-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  image-rendering: pixelated;
+}
+
+.rope-progress-track {
+  position: relative;
+  width: 100%;
+  height: 18px;
+}
+
+.rope-progress-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 10px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(247, 228, 168, 0.28);
+  background:
+    repeating-linear-gradient(90deg, rgba(183, 173, 146, 0.3) 0 5px, rgba(54, 49, 55, 0.88) 5px 10px),
+    linear-gradient(180deg, #2c2b2f, #111115);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.7),
+    0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+.rope-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 1;
+  width: var(--rope-progress);
+  height: 10px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(247, 228, 168, 0.42);
+  background:
+    repeating-linear-gradient(90deg, var(--status-trim) 0 4px, var(--status-edge) 4px 8px, var(--status-main) 8px 12px),
+    linear-gradient(180deg, var(--status-edge), var(--status-main));
+  box-shadow:
+    inset 0 2px 0 rgba(247, 228, 168, 0.2),
+    0 0 14px color-mix(in srgb, var(--status-edge) 45%, transparent);
+}
+
+.rope-progress-softspot {
+  position: absolute;
+  left: var(--pole-position);
+  top: 50%;
+  z-index: 2;
+  width: 10px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(247, 228, 168, 0.36);
+  background: linear-gradient(180deg, #4a4447, #151316);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.5),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+.rope-progress-softspot.is-lit {
+  border-color: var(--status-trim);
+  background: linear-gradient(180deg, var(--status-trim), var(--status-edge));
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.28),
+    0 0 16px color-mix(in srgb, var(--status-edge) 70%, transparent),
+    0 3px 0 rgba(0, 0, 0, 0.45);
 }
 
 .hud-input-stack {
@@ -821,8 +965,8 @@ CSS = """
 }
 
 .gradio-container button.secondary {
-  background: #101014 !important;
-  border-color: var(--vr-border) !important;
+  background: var(--vr-ink) !important;
+  border-color: var(--vr-gold) !important;
   color: var(--vr-text-gold) !important;
 }
 
@@ -841,6 +985,10 @@ CSS = """
   font-size: 1.35rem !important;
   font-weight: 400 !important;
   letter-spacing: 0 !important;
+}
+
+.gradio-container button.secondary {
+  border-image-slice: 16 24 !important;
 }
 
 .gradio-container button.primary:hover,
@@ -913,6 +1061,7 @@ CSS = """
     max-height: none;
   }
 
+  .velvet-stage,
   .chat-panel {
     height: auto;
     max-height: none;
@@ -970,7 +1119,7 @@ CSS = """
   }
 
   .hud-input-row {
-    grid-template-columns: 1fr 0.55fr;
+    grid-template-columns: 1fr;
   }
 }
 """.replace("__JERSEY_10_URL__", static_asset_url("fonts/Jersey10-Regular.ttf"))
@@ -1027,6 +1176,7 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                     read_room = gr.HTML()
                 with gr.Column(scale=5, min_width=320, elem_classes=["hud-status-slot"]):
                     status_bar = gr.HTML()
+                    progress_rope = gr.HTML(elem_classes=["hud-progress-slot"])
                 with gr.Column(scale=5, min_width=360, elem_classes=["hud-input-stack"]):
                     player_input = gr.Textbox(
                         label=MARLOWE.input_label,
@@ -1038,59 +1188,64 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                         send = gr.Button("Send", variant="primary", scale=2)
                         reset = gr.Button("Reset", variant="secondary", scale=1)
 
-        def render(current: GameState) -> tuple[str, str, str, list[dict[str, str]]]:
+        def render(current: GameState) -> tuple[str, str, str, str, list[dict[str, str]]]:
             return (
                 _scene_html(current),
                 _read_room_html(current),
                 _status_bar_html(current),
+                _progress_rope_html(current),
                 _chat_messages(current),
             )
 
         def submit(
             message: str,
             current: GameState,
-        ) -> tuple[GameState, str, str, str, list[dict[str, str]], str]:
+        ) -> tuple[GameState, str, str, str, str, list[dict[str, str]], str]:
             cleaned = message.strip()
             if not cleaned:
-                scene_html, hint_html, status_html, messages = render(current)
-                return current, scene_html, hint_html, status_html, messages, ""
+                scene_html, hint_html, status_html, progress_html, messages = render(current)
+                return current, scene_html, hint_html, status_html, progress_html, messages, ""
             updated = _service_for_state(services, current).play_turn(current, cleaned)
-            scene_html, hint_html, status_html, messages = render(updated)
-            return updated, scene_html, hint_html, status_html, messages, ""
+            scene_html, hint_html, status_html, progress_html, messages = render(updated)
+            return updated, scene_html, hint_html, status_html, progress_html, messages, ""
 
-        def restart(current: GameState) -> tuple[GameState, str, str, str, list[dict[str, str]], str]:
+        def restart(current: GameState) -> tuple[GameState, str, str, str, str, list[dict[str, str]], str]:
             fresh = _service_for_state(services, current).new_game()
-            scene_html, hint_html, status_html, messages = render(fresh)
-            return fresh, scene_html, hint_html, status_html, messages, ""
+            scene_html, hint_html, status_html, progress_html, messages = render(fresh)
+            return fresh, scene_html, hint_html, status_html, progress_html, messages, ""
 
-        def select_level(level_label: str) -> tuple[GameState, str, str, str, list[dict[str, str]], dict]:
+        def select_level(level_label: str) -> tuple[GameState, str, str, str, str, list[dict[str, str]], dict]:
             character = _character_for_level_label(level_label)
             fresh = services[character.character_id].new_game()
-            scene_html, hint_html, status_html, messages = render(fresh)
+            scene_html, hint_html, status_html, progress_html, messages = render(fresh)
             input_update = gr.update(
                 label=character.input_label,
                 placeholder=character.input_placeholder,
                 value="",
             )
-            return fresh, scene_html, hint_html, status_html, messages, input_update
+            return fresh, scene_html, hint_html, status_html, progress_html, messages, input_update
 
-        app.load(render, inputs=state, outputs=[scene, read_room, status_bar, chatbot])
+        app.load(render, inputs=state, outputs=[scene, read_room, status_bar, progress_rope, chatbot])
         level.change(
             select_level,
             inputs=level,
-            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
         send.click(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
         player_input.submit(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
-        reset.click(restart, inputs=state, outputs=[state, scene, read_room, status_bar, chatbot, player_input])
+        reset.click(
+            restart,
+            inputs=state,
+            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+        )
 
     return app
 
@@ -1187,6 +1342,41 @@ def _status_bar_html(state: GameState) -> str:
       </div>
     </section>
     """
+
+
+def _progress_rope_html(state: GameState) -> str:
+    character = character_for_id(state.character_id)
+    progress = _progress_percent(state)
+    required_softspots = max(1, character.min_win_softspot_progress)
+    unlocked_softspots = min(max(state.scores.softspot_progress, 0), required_softspots)
+    poles = []
+    for index in range(required_softspots):
+        position = 100 if required_softspots == 1 else round(index * 100 / (required_softspots - 1))
+        lit_class = " is-lit" if index < unlocked_softspots else ""
+        poles.append(
+            '<span class="rope-progress-softspot'
+            f'{lit_class}" style="--pole-position: {position}%;" aria-hidden="true"></span>'
+        )
+    aria_label = f"Progress {progress}%, soft spots {unlocked_softspots} of {required_softspots}"
+    return f"""
+    <section class="rope-progress character-{html.escape(state.character_id)}" style="--rope-progress: {progress}%;" aria-label="{html.escape(aria_label)}">
+      <div class="rope-progress-track" aria-hidden="true">
+        <span class="rope-progress-fill"></span>
+        {''.join(poles)}
+      </div>
+    </section>
+    """
+
+
+def _progress_percent(state: GameState) -> int:
+    character = character_for_id(state.character_id)
+    if state.status is GameStatus.WON:
+        return 100
+    start = character.initial_scores.rapport
+    target = max(character.win_rapport, start + 1)
+    score_progress = (state.scores.rapport - start) / (target - start)
+    score_progress = min(max(score_progress, 0), 1)
+    return round(33 + score_progress * 67)
 
 
 def _chat_messages(state: GameState) -> list[dict[str, str]]:

@@ -460,7 +460,7 @@ def test_game_service_reports_cold_model_without_scoring_when_fallback_disabled(
 
     assert "warming up" in assistant_reply
     assert "cold" in assistant_reply
-    assert "real read" in assistant_reply
+    assert "real read" not in assistant_reply
     assert updated.status is GameStatus.ACTIVE
     assert updated.scores == state.scores
     assert updated.mood is state.mood
