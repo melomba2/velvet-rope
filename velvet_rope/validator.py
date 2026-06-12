@@ -123,7 +123,7 @@ def validate_turn(
         and not repeated_tactic
         and proposed_mood not in {Mood.SUSPICIOUS, Mood.DONE_WITH_YOU}
     )
-    next_status = _choose_status(character, next_scores, validator_winning_mood and state.mood is Mood.SOFTENED)
+    next_status = _choose_status(character, next_scores, validator_winning_mood)
 
     if next_status is GameStatus.WON:
         next_mood = Mood.LETTING_YOU_IN

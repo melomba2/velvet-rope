@@ -516,6 +516,19 @@ def test_game_service_can_win_after_two_distinct_softspots():
     assert state.mood is Mood.LETTING_YOU_IN
 
 
+def test_game_service_wins_when_second_distinct_softspot_meets_visible_requirements():
+    service = GameService(backend=DeterministicMarloweBackend())
+    state = service.new_game()
+
+    state = service.play_turn(state, "Your line logistics are impressive.")
+    state = service.play_turn(state, "Those comfortable shoes must matter during door work.")
+
+    assert state.scores.rapport >= service.character.win_rapport
+    assert state.scores.softspot_progress == service.character.min_win_softspot_progress
+    assert state.status is GameStatus.WON
+    assert state.mood is Mood.LETTING_YOU_IN
+
+
 def test_repeating_line_logistics_cannot_win_game():
     service = GameService(backend=DeterministicMarloweBackend())
     state = service.new_game()

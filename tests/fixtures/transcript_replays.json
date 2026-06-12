@@ -6,19 +6,18 @@
       "id": "distinct_softspots_win",
       "player_lines": [
         "I respect how you manage the line logistics before anyone notices.",
-        "Also, your shoes must be doing heroic work while you keep everyone safe.",
-        "You prevent tiny disasters before the club ever knows they happened."
+        "Also, your shoes must be doing heroic work while you keep everyone safe."
       ],
       "expect": {
         "final_status": "won",
         "final_mood": "letting_you_in",
-        "used_tactics": ["comfort_empathy", "line_logistics", "tiny_disasters"],
-        "mood_path": ["respected", "softened", "letting_you_in"],
+        "used_tactics": ["comfort_empathy", "line_logistics"],
+        "mood_path": ["respected", "letting_you_in"],
         "score_bounds": {
           "rapport_min": 40,
           "suspicion_max": 45,
           "patience_min": 1,
-          "softspot_progress": 3
+          "softspot_progress": 2
         },
         "assistant_reply_contains": "rope"
       }
