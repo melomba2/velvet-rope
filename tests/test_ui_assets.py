@@ -10,7 +10,7 @@ from velvet_rope.art import (
 )
 from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE, character_for_id
 from velvet_rope.state import GameStatus, Mood, new_game_state
-from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html
+from velvet_rope.ui import CSS, _header_html, _read_room_html, _scene_html, _status_bar_html
 
 
 def test_manifest_assets_are_local_to_runtime_art_root():
@@ -340,10 +340,15 @@ def test_css_marlowe_box_is_dark_but_visibly_transparent():
     assert "rgba(9, 9, 11, 0.72)" in CSS
 
 
-def test_css_places_status_at_scene_bottom():
+def test_status_copy_moves_from_scene_to_bottom_hud():
+    scene = _scene_html(new_game_state(MARLOWE))
+    status_bar = _status_bar_html(new_game_state(MARLOWE))
+
     assert ".marlowe-figure" in CSS
-    assert ".stage-status" in CSS
-    assert "bottom: 48px;" in CSS
+    assert ".stage-status" not in CSS
+    assert "stage-status" not in scene
+    assert "velvet-status-bar" in status_bar
+    assert "The club thumps behind the door" in status_bar
 
 
 def test_css_references_stage_background_assets_directly():
@@ -377,6 +382,36 @@ def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
     assert "justify-content: flex-end;" in CSS
     assert "flex: 0 0 340px !important;" in CSS
     assert "max-width: 340px;" in CSS
+
+
+def test_status_bar_html_uses_character_status_and_classes():
+    game_state = replace(
+        new_game_state(VIVIENNE),
+        mood=Mood.RESPECTED,
+    )
+
+    status_bar = _status_bar_html(game_state)
+
+    assert "velvet-status-bar" in status_bar
+    assert "character-vivienne" in status_bar
+    assert "mood-respected" in status_bar
+    assert "is-active" in status_bar
+    assert "The forms align by half an inch" in status_bar
+    assert "Somnolent Bureau" in status_bar
+
+
+def test_css_defines_full_width_retro_bottom_hud():
+    assert ".hud-console" in CSS
+    assert ".hud-read-room" in CSS
+    assert ".velvet-status-bar" in CSS
+    assert ".hud-input-row" in CSS
+    assert "grid-column: 1 / -1;" in CSS
+    assert "image-rendering: pixelated;" in CSS
+    assert "status_marlowe_rope.png" in CSS
+    assert "status_vivienne_rope.png" in CSS
+    assert "status_crispin_rope.png" in CSS
+    assert "status_lenore_rope.png" in CSS
+    assert "status_aurelia_rope.png" in CSS
 
 
 def test_chat_panel_keeps_input_controls_stacked_after_messages_render():

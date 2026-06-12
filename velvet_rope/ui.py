@@ -115,10 +115,13 @@ CSS = """
 
 .velvet-stage,
 .chat-panel {
-  border: 1px solid var(--vr-border);
-  border-radius: 8px;
+  border: 3px solid var(--vr-border);
+  border-radius: 6px;
   background: rgba(18, 13, 20, 0.94);
-  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.32);
+  box-shadow:
+    inset 0 0 0 2px rgba(247, 228, 168, 0.06),
+    0 10px 0 rgba(0, 0, 0, 0.28),
+    0 22px 80px rgba(0, 0, 0, 0.26);
   overflow: hidden;
 }
 
@@ -295,19 +298,6 @@ CSS = """
   filter: drop-shadow(0 10px 0 rgba(9, 9, 11, 0.2));
 }
 
-.stage-status {
-  color: var(--vr-muted);
-  line-height: 1.45;
-  position: absolute;
-  right: 18px;
-  bottom: 48px;
-  z-index: 5;
-  max-width: min(46ch, 52%);
-  text-shadow: 0 2px 0 #09090b, 0 0 12px #09090b;
-  border-left: 3px solid var(--vr-rope);
-  padding-left: 12px;
-}
-
 .state-stamp {
   position: absolute;
   right: 28px;
@@ -364,10 +354,9 @@ CSS = """
   padding: 10px;
   min-height: 0;
   height: calc(100vh - 150px);
-  max-height: 680px;
+  max-height: 500px;
   background:
-    linear-gradient(180deg, rgba(18, 13, 20, 0.96), rgba(9, 9, 11, 0.98)),
-    radial-gradient(circle at 94% 8%, rgba(214, 177, 94, 0.12), transparent 10rem);
+    linear-gradient(180deg, rgba(18, 13, 20, 0.96), rgba(9, 9, 11, 0.98));
 }
 
 .chat-panel .bubble-wrap,
@@ -393,19 +382,21 @@ CSS = """
   overflow-y: auto !important;
 }
 
-.chat-panel .form {
-  flex: 0 0 auto;
-}
-
 .read-room-panel {
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
-  min-height: 64px;
-  padding: 8px;
-  border: 1px solid rgba(214, 177, 94, 0.28);
-  border-radius: 8px;
-  background: rgba(16, 16, 20, 0.78);
+  min-height: 86px;
+  height: 100%;
+  padding: 10px 12px;
+  border: 3px solid rgba(214, 177, 94, 0.62);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(26, 20, 24, 0.98), rgba(13, 13, 17, 0.98)),
+    repeating-linear-gradient(90deg, rgba(214, 177, 94, 0.12) 0 2px, transparent 2px 8px);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.72),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.22);
 }
 
 .read-room-panel h3 {
@@ -422,11 +413,173 @@ CSS = """
   line-height: 1.25;
 }
 
+.hud-console {
+  grid-column: 1 / -1;
+  display: grid !important;
+  grid-template-columns: minmax(230px, 0.95fr) minmax(340px, 1.35fr) minmax(340px, 1.1fr);
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 10px;
+  padding: 10px;
+  border: 3px solid rgba(214, 177, 94, 0.64);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(20, 14, 18, 0.98), rgba(8, 8, 10, 0.98)),
+    repeating-linear-gradient(0deg, rgba(247, 228, 168, 0.05) 0 2px, transparent 2px 8px);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.8),
+    0 10px 0 rgba(0, 0, 0, 0.28),
+    0 20px 40px rgba(0, 0, 0, 0.24);
+}
+
+.hud-console > .gap {
+  display: contents !important;
+}
+
+.hud-read-room,
+.hud-status-slot,
+.hud-input-stack {
+  min-width: 0 !important;
+}
+
+.hud-read-room,
+.hud-status-slot,
+.hud-input-stack,
+.hud-read-room .form,
+.hud-status-slot .form,
+.hud-input-stack .form {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.velvet-status-bar {
+  --status-main: #7f1c2a;
+  --status-edge: #b32735;
+  --status-trim: #d6b15e;
+  --status-shadow: #09090b;
+  --future-status-asset: "assets/status_marlowe_rope.png";
+  height: 100%;
+  min-height: 86px;
+  image-rendering: pixelated;
+}
+
+.velvet-status-bar.character-vivienne {
+  --status-main: #473061;
+  --status-edge: #866bc1;
+  --status-trim: #d6b15e;
+  --future-status-asset: "assets/status_vivienne_rope.png";
+}
+
+.velvet-status-bar.character-crispin {
+  --status-main: #6b2f16;
+  --status-edge: #d18a39;
+  --status-trim: #f0c874;
+  --future-status-asset: "assets/status_crispin_rope.png";
+}
+
+.velvet-status-bar.character-lenore {
+  --status-main: #451523;
+  --status-edge: #c72f44;
+  --status-trim: #f0d178;
+  --future-status-asset: "assets/status_lenore_rope.png";
+}
+
+.velvet-status-bar.character-aurelia {
+  --status-main: #173f37;
+  --status-edge: #4f8f73;
+  --status-trim: #e6c66d;
+  --future-status-asset: "assets/status_aurelia_rope.png";
+}
+
+.status-bar-frame {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-height: 86px;
+  height: 100%;
+  padding: 12px 16px 12px 18px;
+  overflow: hidden;
+  border: 3px solid var(--status-trim);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(9, 9, 11, 0.76), rgba(9, 9, 11, 0.88)),
+    repeating-linear-gradient(135deg, var(--status-main) 0 10px, var(--status-edge) 10px 20px, var(--status-trim) 20px 24px),
+    linear-gradient(90deg, var(--status-main), var(--status-edge));
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.75),
+    inset 0 -8px 0 rgba(0, 0, 0, 0.22),
+    0 4px 0 rgba(0, 0, 0, 0.32);
+}
+
+.status-bar-frame::before,
+.status-bar-frame::after {
+  content: "";
+  position: absolute;
+  top: 11px;
+  bottom: 11px;
+  width: 14px;
+  border: 2px solid rgba(247, 228, 168, 0.68);
+  background: linear-gradient(180deg, var(--status-trim), var(--status-edge));
+  box-shadow: inset 0 0 0 2px rgba(9, 9, 11, 0.3);
+}
+
+.status-bar-frame::before {
+  left: 10px;
+}
+
+.status-bar-frame::after {
+  right: 10px;
+}
+
+.status-bar-frame .rail-label,
+.status-bar-frame p {
+  position: relative;
+  z-index: 1;
+  margin-left: 18px;
+  margin-right: 18px;
+  text-shadow: 0 2px 0 var(--status-shadow);
+}
+
+.status-bar-frame p {
+  color: var(--vr-text-gold);
+  margin-top: 3px;
+  margin-bottom: 0;
+  font-size: 0.88rem;
+  line-height: 1.24;
+}
+
+.hud-input-stack {
+  display: grid !important;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+}
+
+.hud-input-stack label,
+.hud-input-stack .wrap,
+.hud-input-stack .form {
+  margin: 0 !important;
+}
+
+.hud-input-row {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 1fr) minmax(82px, 0.45fr);
+  gap: 8px;
+}
+
+.hud-input-row > .gap {
+  display: contents !important;
+}
+
 .gradio-container textarea,
 .gradio-container input {
-  background: #101014 !important;
+  background: #0b0b0f !important;
   color: var(--vr-text-gold) !important;
-  border-color: var(--vr-border) !important;
+  border: 3px solid var(--vr-border) !important;
+  border-radius: 5px !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.55),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.24) !important;
 }
 
 .gradio-container label,
@@ -445,6 +598,18 @@ CSS = """
   background: #101014 !important;
   border-color: var(--vr-border) !important;
   color: var(--vr-text-gold) !important;
+}
+
+.gradio-container button.primary,
+.gradio-container button.secondary {
+  min-height: 42px !important;
+  border-width: 3px !important;
+  border-radius: 5px !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(247, 228, 168, 0.1),
+    0 4px 0 rgba(0, 0, 0, 0.34) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
 }
 
 .gradio-container footer {
@@ -483,9 +648,10 @@ CSS = """
   }
 
   .level-select-card {
-    flex: 1 1 auto;
+    flex: 0 0 auto !important;
     margin-left: 0;
     width: 100%;
+    max-width: 100%;
   }
 
   .nightclub-scene {
@@ -514,13 +680,6 @@ CSS = """
     width: min(76%, 290px);
   }
 
-  .stage-status {
-    right: 8px;
-    bottom: 36px;
-    max-width: calc(100% - 16px);
-    font-size: 0.88rem;
-  }
-
   .velvet-rope-layer {
     bottom: -96px;
     width: 148%;
@@ -545,6 +704,20 @@ CSS = """
 
   .door-plaque {
     max-width: 100%;
+  }
+
+  .hud-console {
+    grid-template-columns: 1fr;
+  }
+
+  .read-room-panel,
+  .velvet-status-bar,
+  .status-bar-frame {
+    min-height: 78px;
+  }
+
+  .hud-input-row {
+    grid-template-columns: 1fr 0.55fr;
   }
 }
 """.replace("__DOOR_BG_URL__", scene_asset_url("door_background"))
@@ -574,7 +747,6 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                 with gr.Column(scale=7, min_width=470, elem_classes=["velvet-stage"]):
                     scene = gr.HTML()
                 with gr.Column(scale=4, min_width=340, elem_classes=["chat-panel"]):
-                    read_room = gr.HTML()
                     chatbot = gr.Chatbot(
                         label="Conversation",
                         type="messages",
@@ -583,64 +755,75 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                         show_copy_button=False,
                         avatar_images=(None, None),
                     )
+            with gr.Row(equal_height=False, elem_classes=["hud-console"]):
+                with gr.Column(scale=4, min_width=270, elem_classes=["hud-read-room"]):
+                    read_room = gr.HTML()
+                with gr.Column(scale=5, min_width=320, elem_classes=["hud-status-slot"]):
+                    status_bar = gr.HTML()
+                with gr.Column(scale=5, min_width=360, elem_classes=["hud-input-stack"]):
                     player_input = gr.Textbox(
                         label=MARLOWE.input_label,
                         placeholder=MARLOWE.input_placeholder,
                         lines=1,
                         max_lines=1,
                     )
-                    with gr.Row():
+                    with gr.Row(elem_classes=["hud-input-row"]):
                         send = gr.Button("Send", variant="primary", scale=2)
                         reset = gr.Button("Reset", variant="secondary", scale=1)
 
-        def render(current: GameState) -> tuple[str, str, list[dict[str, str]]]:
-            return _scene_html(current), _read_room_html(current), _chat_messages(current)
+        def render(current: GameState) -> tuple[str, str, str, list[dict[str, str]]]:
+            return (
+                _scene_html(current),
+                _read_room_html(current),
+                _status_bar_html(current),
+                _chat_messages(current),
+            )
 
         def submit(
             message: str,
             current: GameState,
-        ) -> tuple[GameState, str, str, list[dict[str, str]], str]:
+        ) -> tuple[GameState, str, str, str, list[dict[str, str]], str]:
             cleaned = message.strip()
             if not cleaned:
-                scene_html, hint_html, messages = render(current)
-                return current, scene_html, hint_html, messages, ""
+                scene_html, hint_html, status_html, messages = render(current)
+                return current, scene_html, hint_html, status_html, messages, ""
             updated = _service_for_state(services, current).play_turn(current, cleaned)
-            scene_html, hint_html, messages = render(updated)
-            return updated, scene_html, hint_html, messages, ""
+            scene_html, hint_html, status_html, messages = render(updated)
+            return updated, scene_html, hint_html, status_html, messages, ""
 
-        def restart(current: GameState) -> tuple[GameState, str, str, list[dict[str, str]], str]:
+        def restart(current: GameState) -> tuple[GameState, str, str, str, list[dict[str, str]], str]:
             fresh = _service_for_state(services, current).new_game()
-            scene_html, hint_html, messages = render(fresh)
-            return fresh, scene_html, hint_html, messages, ""
+            scene_html, hint_html, status_html, messages = render(fresh)
+            return fresh, scene_html, hint_html, status_html, messages, ""
 
-        def select_level(level_label: str) -> tuple[GameState, str, str, list[dict[str, str]], dict]:
+        def select_level(level_label: str) -> tuple[GameState, str, str, str, list[dict[str, str]], dict]:
             character = _character_for_level_label(level_label)
             fresh = services[character.character_id].new_game()
-            scene_html, hint_html, messages = render(fresh)
+            scene_html, hint_html, status_html, messages = render(fresh)
             input_update = gr.update(
                 label=character.input_label,
                 placeholder=character.input_placeholder,
                 value="",
             )
-            return fresh, scene_html, hint_html, messages, input_update
+            return fresh, scene_html, hint_html, status_html, messages, input_update
 
-        app.load(render, inputs=state, outputs=[scene, read_room, chatbot])
+        app.load(render, inputs=state, outputs=[scene, read_room, status_bar, chatbot])
         level.change(
             select_level,
             inputs=level,
-            outputs=[state, scene, read_room, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
         )
         send.click(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
         )
         player_input.submit(
             submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, chatbot, player_input],
+            outputs=[state, scene, read_room, status_bar, chatbot, player_input],
         )
-        reset.click(restart, inputs=state, outputs=[state, scene, read_room, chatbot, player_input])
+        reset.click(restart, inputs=state, outputs=[state, scene, read_room, status_bar, chatbot, player_input])
 
     return app
 
@@ -687,7 +870,6 @@ def _header_html() -> str:
 def _scene_html(state: GameState) -> str:
     character = character_for_id(state.character_id)
     mood_label = _mood_label(state.mood)
-    status_line = _status_line(state)
     mood_value = html.escape(state.mood.value)
     background_url = html.escape(scene_background_url(state), quote=True)
     sprite_url = html.escape(mood_sprite_url(state.mood, character.character_id), quote=True)
@@ -708,7 +890,6 @@ def _scene_html(state: GameState) -> str:
           <img class="marlowe-figure" src="{sprite_url}" alt="{html.escape(character.display_name)} looks {html.escape(mood_label)}">
         </div>
         {stamp_html}
-        <div class="stage-status">{html.escape(status_line)}</div>
         {rope_html}
       </div>
     </section>
@@ -723,6 +904,19 @@ def _read_room_html(state: GameState) -> str:
         <div class="rail-label">Read the room</div>
         <h3><span class="mood-dot {html.escape(mood_value)}"></span>Current mood: {html.escape(_mood_label(state.mood))}</h3>
         <p>{html.escape(_hint_text(state))}</p>
+      </div>
+    </section>
+    """
+
+
+def _status_bar_html(state: GameState) -> str:
+    character = character_for_id(state.character_id)
+    status_line = _status_line(state)
+    return f"""
+    <section class="velvet-status-bar character-{html.escape(state.character_id)} mood-{html.escape(state.mood.value)} is-{html.escape(state.status.value)}" aria-label="Gate status">
+      <div class="status-bar-frame">
+        <div class="rail-label">{html.escape(character.scene_name)}</div>
+        <p>{html.escape(status_line)}</p>
       </div>
     </section>
     """
