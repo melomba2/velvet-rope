@@ -13,7 +13,16 @@ from velvet_rope.art import (
 )
 from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS, VIVIENNE, character_for_id
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
-from velvet_rope.ui import CSS, build_app, _header_html, _progress_rope_html, _read_room_html, _scene_html, _status_bar_html
+from velvet_rope.ui import (
+    CSS,
+    build_app,
+    _chat_messages,
+    _header_html,
+    _progress_rope_html,
+    _read_room_html,
+    _scene_html,
+    _status_bar_html,
+)
 
 
 def test_manifest_assets_are_local_to_runtime_art_root():
@@ -623,6 +632,44 @@ def test_chatbot_hides_native_scrollbars_around_custom_pixel_scroller():
     assert "overflow: hidden !important;" in wrapper_block
     assert "display: none;" in native_scrollbar_block
     assert "#conversation-chatbot .bubble-wrap::-webkit-scrollbar" in CSS
+
+
+def test_css_hides_gradio_processing_overlays_during_submit():
+    overlay_block = CSS.split(
+        ".gradio-container .wrap.translucent,\n"
+        ".gradio-container .wrap.generating,\n"
+        ".gradio-container .wrap.default.full,\n"
+        ".gradio-container .progress-text,\n"
+        ".gradio-container .eta-bar,\n"
+        "#conversation-chatbot .message.pending {",
+        1,
+    )[1].split("}", 1)[0]
+    pending_content_block = CSS.split(
+        ".gradio-container .html-container.pending,\n"
+        ".gradio-container .prose.pending {",
+        1,
+    )[1].split("}", 1)[0]
+
+    assert "display: none !important;" in overlay_block
+    assert "opacity: 0 !important;" in overlay_block
+    assert "pointer-events: none !important;" in overlay_block
+    assert "opacity: 1 !important;" in pending_content_block
+
+
+def test_pending_chat_messages_show_user_text_and_waiting_dots():
+    messages = _chat_messages(new_game_state(MARLOWE), pending_player_message="Your line logistics are impressive.")
+
+    assert messages[-2] == {"role": "user", "content": "Your line logistics are impressive."}
+    assert messages[-1] == {"role": "assistant", "content": "..."}
+
+
+def test_submit_flow_clears_input_before_backend_reply():
+    source = inspect.getsource(build_app)
+
+    assert "pending_message = gr.State(\"\")" in source
+    assert "def begin_submit(" in source
+    assert "def finish_submit(" in source
+    assert ".then(" in source
 
 
 def test_send_and_reset_use_distinct_action_colors():

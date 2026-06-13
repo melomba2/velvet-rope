@@ -575,6 +575,22 @@ CSS = """
   margin: 10px 8px !important;
 }
 
+.gradio-container .wrap.translucent,
+.gradio-container .wrap.generating,
+.gradio-container .wrap.default.full,
+.gradio-container .progress-text,
+.gradio-container .eta-bar,
+#conversation-chatbot .message.pending {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.gradio-container .html-container.pending,
+.gradio-container .prose.pending {
+  opacity: 1 !important;
+}
+
 #conversation-chatbot .message {
   border: 14px solid transparent !important;
   border-image-slice: 24 fill !important;
@@ -1148,6 +1164,7 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
 
     with gr.Blocks(css=CSS, title="Velvet Rope", theme=gr.themes.Base()) as app:
         state = gr.State(services[MARLOWE.character_id].new_game())
+        pending_message = gr.State("")
 
         with gr.Column(elem_id="velvet-app"):
             with gr.Row(equal_height=False, elem_classes=["velvet-header"]):
@@ -1188,26 +1205,37 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                         send = gr.Button("Send", variant="primary", scale=2)
                         reset = gr.Button("Reset", variant="secondary", scale=1)
 
-        def render(current: GameState) -> tuple[str, str, str, str, list[dict[str, str]]]:
+        def render(
+            current: GameState,
+            pending_player_message: str = "",
+        ) -> tuple[str, str, str, str, list[dict[str, str]]]:
             return (
                 _scene_html(current),
                 _read_room_html(current),
                 _status_bar_html(current),
                 _progress_rope_html(current),
-                _chat_messages(current),
+                _chat_messages(current, pending_player_message=pending_player_message),
             )
 
-        def submit(
+        def begin_submit(
             message: str,
             current: GameState,
-        ) -> tuple[GameState, str, str, str, str, list[dict[str, str]], str]:
-            cleaned = message.strip()
+        ) -> tuple[str, str, str, str, str, list[dict[str, str]], str]:
+            cleaned = (message or "").strip()
+            scene_html, hint_html, status_html, progress_html, messages = render(current, cleaned)
+            return cleaned, scene_html, hint_html, status_html, progress_html, messages, ""
+
+        def finish_submit(
+            message: str,
+            current: GameState,
+        ) -> tuple[str, GameState, str, str, str, str, list[dict[str, str]], str]:
+            cleaned = (message or "").strip()
             if not cleaned:
                 scene_html, hint_html, status_html, progress_html, messages = render(current)
-                return current, scene_html, hint_html, status_html, progress_html, messages, ""
+                return "", current, scene_html, hint_html, status_html, progress_html, messages, ""
             updated = _service_for_state(services, current).play_turn(current, cleaned)
             scene_html, hint_html, status_html, progress_html, messages = render(updated)
-            return updated, scene_html, hint_html, status_html, progress_html, messages, ""
+            return "", updated, scene_html, hint_html, status_html, progress_html, messages, ""
 
         def restart(current: GameState) -> tuple[GameState, str, str, str, str, list[dict[str, str]], str]:
             fresh = _service_for_state(services, current).new_game()
@@ -1231,15 +1259,25 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
             inputs=level,
             outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
-        send.click(
-            submit,
+        send_event = send.click(
+            begin_submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+            outputs=[pending_message, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
-        player_input.submit(
-            submit,
+        send_event.then(
+            finish_submit,
+            inputs=[pending_message, state],
+            outputs=[pending_message, state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+        )
+        input_event = player_input.submit(
+            begin_submit,
             inputs=[player_input, state],
-            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+            outputs=[pending_message, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+        )
+        input_event.then(
+            finish_submit,
+            inputs=[pending_message, state],
+            outputs=[pending_message, state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
         reset.click(
             restart,
@@ -1379,7 +1417,7 @@ def _progress_percent(state: GameState) -> int:
     return round(33 + score_progress * 67)
 
 
-def _chat_messages(state: GameState) -> list[dict[str, str]]:
+def _chat_messages(state: GameState, pending_player_message: str = "") -> list[dict[str, str]]:
     character = character_for_id(state.character_id)
     messages = [
         {
@@ -1388,6 +1426,13 @@ def _chat_messages(state: GameState) -> list[dict[str, str]]:
         }
     ]
     messages.extend({"role": turn.role, "content": turn.content} for turn in state.history)
+    if pending_player_message:
+        messages.extend(
+            [
+                {"role": "user", "content": pending_player_message},
+                {"role": "assistant", "content": "..."},
+            ]
+        )
     return messages
 
 
