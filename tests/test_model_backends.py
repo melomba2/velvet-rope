@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from velvet_rope.characters import AURELIA, LENORE
 from velvet_rope.model_backends import DeterministicMarloweBackend, OpenAICompatibleBackend, backend_from_env
 
 
@@ -113,6 +114,77 @@ def test_deterministic_backend_gives_lenore_clue_for_haunting_question():
     assert "ghost light" in reply
     assert "blackout" in reply
     assert "queue" not in reply
+
+
+def test_lenore_prompt_bans_parroting_and_mechanic_language():
+    prompt = LENORE.system_prompt.lower()
+
+    assert "do not echo" in prompt
+    assert "player's phrasing" in prompt
+    assert "noted" in prompt
+    assert "answered correctly" in prompt
+
+
+def test_aurelia_prompt_bans_mechanic_leak_language():
+    prompt = AURELIA.system_prompt.lower()
+
+    assert "do not say" in prompt
+    assert "noted" in prompt
+    assert "logged" in prompt
+    assert "answered correctly" in prompt
+
+
+def test_deterministic_lenore_generic_miss_is_theatrical_and_substantial():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Lenore Cue",
+        history=[],
+        state_summary="character=lenore rapport=17 suspicion=33 patience=69 softspot_progress=0 mood=unimpressed",
+        player_message="Hello, I am very nice and I would love to come in.",
+    )
+    payload = json.loads(raw)
+    reply = payload["reply"].lower()
+
+    assert payload["tactic"] == "generic"
+    assert reply.count(".") + reply.count("?") + reply.count("!") >= 2
+    assert any(clue in reply for clue in ("ghost light", "blackout", "spike tape", "blocking", "prop table", "call board"))
+    assert "noted" not in reply
+    assert "logged" not in reply
+    assert "answered correctly" not in reply
+
+
+def test_deterministic_marlowe_generic_miss_is_not_near_empty():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="Marlowe",
+        history=[],
+        state_summary="character=marlowe rapport=20 suspicion=35 patience=70 softspot_progress=0 mood=unimpressed",
+        player_message="Hello, you seem nice.",
+    )
+    payload = json.loads(raw)
+
+    assert payload["tactic"] == "generic"
+    assert len(payload["reply"].split()) >= 18
+
+
+def test_deterministic_crispin_generic_miss_stays_warm_and_cozy():
+    backend = DeterministicMarloweBackend()
+
+    raw = backend.generate_turn(
+        character_prompt="You are Crispin Crumbwell",
+        history=[],
+        state_summary="character=crispin rapport=16 suspicion=32 patience=68 softspot_progress=0 mood=unimpressed",
+        player_message="Hello, this place seems nice.",
+    )
+    payload = json.loads(raw)
+    reply = payload["reply"].lower()
+
+    assert payload["tactic"] == "generic"
+    assert any(word in reply for word in ("warm", "kindly", "gentle", "softens", "smiles"))
+    assert any(clue in reply for clue in ("batch", "oven", "cooling", "craft", "boots", "ledger"))
+    assert "unsuitable key" not in reply
 
 
 def test_deterministic_backend_detects_crispin_recipe_theft():

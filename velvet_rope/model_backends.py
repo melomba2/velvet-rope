@@ -77,7 +77,10 @@ def _deterministic_marlowe_turn(state_summary: str, player_message: str) -> str:
         )
     return json.dumps(
         {
-            "reply": "You and everyone else in that line have a compelling inner life. The answer remains no.",
+            "reply": (
+                "Marlowe looks from you to the line curling around the block. "
+                "'Nice is abundant; show me you understand shoes, exits, or the tiny disasters waiting to happen.'"
+            ),
             "mood": "unimpressed",
             "score_delta": {
                 "rapport": 1,
@@ -193,7 +196,10 @@ def _deterministic_crispin_turn(state_summary: str, player_message: str) -> str:
         )
     return json.dumps(
         {
-            "reply": "Crispin brushes flour from the ledger. 'Pleasant sentiment. Unsuitable key.'",
+            "reply": (
+                "Crispin's smile stays gentle, though the ledger does not move. "
+                "'Kind words smell lovely, but craft opens this knot-door: batch timing, root ovens, cooling racks, or honest boots.'"
+            ),
             "mood": "unimpressed",
             "score_delta": {
                 "rapport": 1,
@@ -542,17 +548,17 @@ def _lenore_softspot_reply(tactic: str, mood: str) -> str:
         )
     replies = {
         "backstage_labor": "Lenore's pencil pauses. 'Prop tables and spike tape. At last, someone sees the bones of the miracle.'",
-        "scene_protection": "Lenore glances from the ghost light to the blackout mark. 'Not stealing focus. Good. A scene can survive that.'",
-        "invisible_applause": "Lenore goes still. 'Applause has always been a weather system I manage for other people.'",
+        "scene_protection": "Lenore glances from the ghost light to the blackout mark. 'Good. You know a scene needs oxygen more than another spotlight.'",
+        "invisible_applause": "Lenore goes still. 'The ovation is weather; my work is keeping the roof from coming off.'",
     }
-    return replies.get(tactic, "Lenore makes a note that is not entirely hostile.")
+    return replies.get(tactic, "Lenore lets the pencil hover, then lowers it without mercy.")
 
 
 def _lenore_clue_reply() -> str:
     return (
         "Lenore checks the call board without writing your name. "
-        "'A greeting is not an entrance. Try the ghost light, the blackout mark, "
-        "or the spike tape if you mean to read the scene.'"
+        "'A greeting is not an entrance. Find the ghost light, the blackout mark, "
+        "or the spike tape, then tell me where you belong in the scene.'"
     )
 
 
@@ -583,9 +589,9 @@ def _aurelia_softspot_reply(tactic: str, mood: str) -> str:
         "hospitality_art": "Aurelia's smile warms by a degree. 'Hospitality as art. At last, a guest who notices the spellwork.'",
         "room_stewardship": "The invitations orbit more gently. 'Protecting a room's mood is not hoarding. It is stewardship.'",
         "invitation_responsibility": "Aurelia taps the guest list. 'An invitation is a responsibility dressed beautifully.'",
-        "add_wonder": "A distant door opens onto music. 'Adding wonder instead of consuming it. Promising.'",
+        "add_wonder": "A distant door opens onto music. 'A guest who leaves brightness behind may be worth a ribbon.'",
     }
-    return replies.get(tactic, "Aurelia makes a note that is not entirely unkind.")
+    return replies.get(tactic, "Aurelia lets one invitation tilt closer without promising ink.")
 
 
 def _contains_any_keyword(lowered_message: str, keywords: tuple[str, ...]) -> bool:
