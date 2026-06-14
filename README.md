@@ -18,7 +18,6 @@ tags:
   - llama-champion
   - off-brand
   - custom-ui
-  - best-demo
   - gradio
   - modal
   - lora
@@ -37,8 +36,8 @@ models:
 
 ## 🏆 Build Small Hackathon Submission
 - **Track:** Thousand Token Wood
-- **Demo video:** <<DEMO_VIDEO_URL>>
-- **Social post:** <<SOCIAL_POST_URL>>
+- **Demo video:** https://youtu.be/ilyFFChfPFE
+- **Social post:** https://x.com/lombard258/status/2065953865581596846
 - **Models (all ≤32B):** Gemma 4 12B (`unsloth/gemma-4-12b-it-qat-GGUF`, served via
   llama.cpp on Modal with one small LoRA adapter per character) + Gemma 4 26B-A4B
   (`google/gemma-4-26B-A4B-it`, 25.2B total / 3.8B active, Router fallback).
@@ -51,6 +50,18 @@ models:
 - **Why it fits:** A delightful, AI-load-bearing game — each gatekeeper's voice, mood
   shifts, and persuasion scoring come from the small model; you win by reading their
   soft spot, not by prompt injection.
+
+## Idea & Tech
+
+Velvet Rope is a small, character-driven persuasion game where you talk your way
+past a cast of moody AI gatekeepers by reading each character's voice, mood, and
+soft spot. It is a playful homage to Gandalf-style "guess the wizard's password"
+games, but flips the challenge from extracting a secret into understanding a
+character. It is built as a custom Gradio app for Hugging Face Spaces, with real
+model turns served by a Modal-hosted llama.cpp runtime using Gemma 4 12B plus one
+LoRA adapter per character; a Gemma 4 26B-A4B Hugging Face Router backend is
+available as a demo fallback, and all model paths stay under the 32B contest
+limit.
 
 # Velvet Rope
 
