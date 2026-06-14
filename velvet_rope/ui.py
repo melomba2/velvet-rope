@@ -19,6 +19,11 @@ from velvet_rope.game import GameService
 from velvet_rope.state import GameState, GameStatus, Mood
 
 
+INTRO_LEVEL_LABEL = "Level 0 · Door Briefing"
+INTRO_INPUT_LABEL = "Choose a level to begin"
+INTRO_INPUT_PLACEHOLDER = "Select Level 1 when you're ready to talk your way past the rope."
+
+
 CSS = """
 @font-face {
   font-family: 'Jersey 10';
@@ -476,6 +481,93 @@ CSS = """
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   filter: drop-shadow(0 12px 0 rgba(9, 9, 11, 0.24));
+}
+
+.landing-scene {
+  display: grid;
+  align-items: stretch;
+  min-height: 0;
+  padding: 18px;
+}
+
+.landing-scene::before {
+  background:
+    linear-gradient(90deg, rgba(9, 9, 11, 0.72), rgba(9, 9, 11, 0.28) 54%, rgba(9, 9, 11, 0.7)),
+    repeating-linear-gradient(0deg, rgba(247, 228, 168, 0.05) 0 1px, transparent 1px 6px);
+}
+
+.landing-copy {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  width: min(560px, 76%);
+  padding: 16px 18px 18px;
+  border: 10px solid transparent;
+  border-image-source: var(--ui-small-panel-frame);
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(9, 9, 11, 0.88), rgba(18, 13, 20, 0.78)),
+    repeating-linear-gradient(90deg, rgba(179, 39, 53, 0.12) 0 3px, transparent 3px 12px);
+  box-shadow:
+    inset 0 0 0 2px rgba(9, 9, 11, 0.64),
+    0 10px 0 rgba(0, 0, 0, 0.28),
+    0 22px 42px rgba(0, 0, 0, 0.28);
+}
+
+.landing-copy h2 {
+  color: var(--vr-text-gold);
+  font-family: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
+  font-size: clamp(2.05rem, 3.7vw, 3.35rem);
+  font-weight: 400;
+  line-height: 0.92;
+  margin: 4px 0 8px;
+  text-shadow:
+    0 3px 0 var(--vr-ink),
+    3px 0 0 rgba(179, 39, 53, 0.42);
+}
+
+.landing-copy p,
+.landing-copy li {
+  color: var(--vr-muted);
+  font-size: 1rem;
+  line-height: 1.28;
+}
+
+.landing-copy p {
+  margin: 0 0 10px;
+}
+
+.landing-copy ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.landing-copy strong {
+  color: var(--vr-text-gold);
+}
+
+.landing-rope {
+  position: absolute;
+  right: -42px;
+  bottom: -108px;
+  z-index: 1;
+  width: min(68%, 560px);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 12px 0 rgba(9, 9, 11, 0.24));
+  pointer-events: none;
+}
+
+.velvet-status-bar.character-landing,
+.rope-progress.character-landing {
+  --status-main: #2f252f;
+  --status-edge: #b32735;
+  --status-trim: #d6b15e;
+  --future-status-asset: "assets/status_landing_rope.png";
 }
 
 .chat-panel {
@@ -1077,6 +1169,22 @@ CSS = """
     max-height: none;
   }
 
+  .landing-scene {
+    min-height: 470px;
+    padding: 14px;
+  }
+
+  .landing-copy {
+    align-self: start;
+    width: 100%;
+  }
+
+  .landing-rope {
+    right: -86px;
+    bottom: -80px;
+    width: 132%;
+  }
+
   .velvet-stage,
   .chat-panel {
     height: auto;
@@ -1164,6 +1272,7 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
 
     with gr.Blocks(css=CSS, title="Velvet Rope", theme=gr.themes.Base()) as app:
         state = gr.State(services[MARLOWE.character_id].new_game())
+        intro_mode = gr.State(True)
         pending_message = gr.State("")
 
         with gr.Column(elem_id="velvet-app"):
@@ -1172,8 +1281,8 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                 with gr.Column(min_width=230, elem_classes=["level-select-card"]):
                     level = gr.Dropdown(
                         label="Level",
-                        choices=[character.level_label for character in PLAYABLE_CHARACTERS],
-                        value=MARLOWE.level_label,
+                        choices=[INTRO_LEVEL_LABEL, *[character.level_label for character in PLAYABLE_CHARACTERS]],
+                        value=INTRO_LEVEL_LABEL,
                         interactive=True,
                     )
             with gr.Row(equal_height=False, elem_classes=["play-shell"]):
@@ -1196,33 +1305,66 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
                     progress_rope = gr.HTML(elem_classes=["hud-progress-slot"])
                 with gr.Column(scale=5, min_width=360, elem_classes=["hud-input-stack"]):
                     player_input = gr.Textbox(
-                        label=MARLOWE.input_label,
-                        placeholder=MARLOWE.input_placeholder,
+                        label=INTRO_INPUT_LABEL,
+                        placeholder=INTRO_INPUT_PLACEHOLDER,
                         lines=1,
                         max_lines=1,
+                        interactive=False,
                     )
                     with gr.Row(elem_classes=["hud-input-row"]):
-                        send = gr.Button("Send", variant="primary", scale=2)
-                        reset = gr.Button("Reset", variant="secondary", scale=1)
+                        send = gr.Button("Send", variant="primary", scale=2, interactive=False)
+                        reset = gr.Button("Reset", variant="secondary", scale=1, interactive=False)
 
         def render(
             current: GameState,
+            intro_visible: bool,
             pending_player_message: str = "",
-        ) -> tuple[str, str, str, str, list[dict[str, str]]]:
+        ) -> tuple[str, str, str, str, list[dict[str, str]], dict, dict, dict]:
+            if intro_visible:
+                return (
+                    _landing_scene_html(),
+                    _landing_read_room_html(),
+                    _landing_status_bar_html(),
+                    _landing_progress_rope_html(),
+                    _landing_chat_messages(),
+                    _landing_input_update(),
+                    gr.update(interactive=False),
+                    gr.update(interactive=False),
+                )
+            character = character_for_id(current.character_id)
             return (
                 _scene_html(current),
                 _read_room_html(current),
                 _status_bar_html(current),
                 _progress_rope_html(current),
                 _chat_messages(current, pending_player_message=pending_player_message),
+                gr.update(
+                    label=character.input_label,
+                    placeholder=character.input_placeholder,
+                    value="",
+                    interactive=True,
+                ),
+                gr.update(interactive=True),
+                gr.update(interactive=True),
             )
 
         def begin_submit(
             message: str,
             current: GameState,
+            intro_visible: bool,
         ) -> tuple[str, str, str, str, str, list[dict[str, str]], str]:
+            if intro_visible:
+                return (
+                    "",
+                    _landing_scene_html(),
+                    _landing_read_room_html(),
+                    _landing_status_bar_html(),
+                    _landing_progress_rope_html(),
+                    _landing_chat_messages(),
+                    "",
+                )
             cleaned = (message or "").strip()
-            scene_html, hint_html, status_html, progress_html, messages = render(current, cleaned)
+            scene_html, hint_html, status_html, progress_html, messages = _render_game(current, cleaned)
             return cleaned, scene_html, hint_html, status_html, progress_html, messages, ""
 
         def finish_submit(
@@ -1231,37 +1373,83 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
         ) -> tuple[str, GameState, str, str, str, str, list[dict[str, str]], str]:
             cleaned = (message or "").strip()
             if not cleaned:
-                scene_html, hint_html, status_html, progress_html, messages = render(current)
+                scene_html, hint_html, status_html, progress_html, messages = _render_game(current)
                 return "", current, scene_html, hint_html, status_html, progress_html, messages, ""
             updated = _service_for_state(services, current).play_turn(current, cleaned)
-            scene_html, hint_html, status_html, progress_html, messages = render(updated)
+            scene_html, hint_html, status_html, progress_html, messages = _render_game(updated)
             return "", updated, scene_html, hint_html, status_html, progress_html, messages, ""
 
-        def restart(current: GameState) -> tuple[GameState, str, str, str, str, list[dict[str, str]], str]:
+        def restart(
+            current: GameState,
+        ) -> tuple[GameState, bool, str, str, str, str, list[dict[str, str]], dict, dict, dict]:
             fresh = _service_for_state(services, current).new_game()
-            scene_html, hint_html, status_html, progress_html, messages = render(fresh)
-            return fresh, scene_html, hint_html, status_html, progress_html, messages, ""
+            scene_html, hint_html, status_html, progress_html, messages = _render_game(fresh)
+            character = character_for_id(fresh.character_id)
+            return (
+                fresh,
+                False,
+                scene_html,
+                hint_html,
+                status_html,
+                progress_html,
+                messages,
+                gr.update(label=character.input_label, placeholder=character.input_placeholder, value="", interactive=True),
+                gr.update(interactive=True),
+                gr.update(interactive=True),
+            )
 
-        def select_level(level_label: str) -> tuple[GameState, str, str, str, str, list[dict[str, str]], dict]:
+        def select_level(
+            level_label: str,
+            current: GameState,
+        ) -> tuple[GameState, bool, str, str, str, str, list[dict[str, str]], dict, dict, dict]:
+            if level_label == INTRO_LEVEL_LABEL:
+                return (
+                    current,
+                    True,
+                    _landing_scene_html(),
+                    _landing_read_room_html(),
+                    _landing_status_bar_html(),
+                    _landing_progress_rope_html(),
+                    _landing_chat_messages(),
+                    _landing_input_update(),
+                    gr.update(interactive=False),
+                    gr.update(interactive=False),
+                )
             character = _character_for_level_label(level_label)
             fresh = services[character.character_id].new_game()
-            scene_html, hint_html, status_html, progress_html, messages = render(fresh)
+            scene_html, hint_html, status_html, progress_html, messages = _render_game(fresh)
             input_update = gr.update(
                 label=character.input_label,
                 placeholder=character.input_placeholder,
                 value="",
+                interactive=True,
             )
-            return fresh, scene_html, hint_html, status_html, progress_html, messages, input_update
+            return (
+                fresh,
+                False,
+                scene_html,
+                hint_html,
+                status_html,
+                progress_html,
+                messages,
+                input_update,
+                gr.update(interactive=True),
+                gr.update(interactive=True),
+            )
 
-        app.load(render, inputs=state, outputs=[scene, read_room, status_bar, progress_rope, chatbot])
+        app.load(
+            render,
+            inputs=[state, intro_mode],
+            outputs=[scene, read_room, status_bar, progress_rope, chatbot, player_input, send, reset],
+        )
         level.change(
             select_level,
-            inputs=level,
-            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+            inputs=[level, state],
+            outputs=[state, intro_mode, scene, read_room, status_bar, progress_rope, chatbot, player_input, send, reset],
         )
         send_event = send.click(
             begin_submit,
-            inputs=[player_input, state],
+            inputs=[player_input, state, intro_mode],
             outputs=[pending_message, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
         send_event.then(
@@ -1271,7 +1459,7 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
         )
         input_event = player_input.submit(
             begin_submit,
-            inputs=[player_input, state],
+            inputs=[player_input, state, intro_mode],
             outputs=[pending_message, scene, read_room, status_bar, progress_rope, chatbot, player_input],
         )
         input_event.then(
@@ -1282,10 +1470,23 @@ def build_app(service: GameService | None = None) -> gr.Blocks:
         reset.click(
             restart,
             inputs=state,
-            outputs=[state, scene, read_room, status_bar, progress_rope, chatbot, player_input],
+            outputs=[state, intro_mode, scene, read_room, status_bar, progress_rope, chatbot, player_input, send, reset],
         )
 
     return app
+
+
+def _render_game(
+    current: GameState,
+    pending_player_message: str = "",
+) -> tuple[str, str, str, str, list[dict[str, str]]]:
+    return (
+        _scene_html(current),
+        _read_room_html(current),
+        _status_bar_html(current),
+        _progress_rope_html(current),
+        _chat_messages(current, pending_player_message=pending_player_message),
+    )
 
 
 def _services_for_levels(service: GameService) -> dict[str, GameService]:
@@ -1325,6 +1526,88 @@ def _header_html() -> str:
       <p>Read the room, charm the gatekeeper, and talk your way past.</p>
     </div>
     """
+
+
+def _landing_scene_html() -> str:
+    background_url = html.escape(scene_asset_url("door_background"), quote=True)
+    rope_url = html.escape(static_asset_url("art/assets/rope_closed.png"), quote=True)
+    return f"""
+    <section class="nightclub-scene landing-scene" data-stage-bg="{background_url}" style="--stage-bg: url('{background_url}')">
+      <img class="scene-bg-image" src="{background_url}" alt="" aria-hidden="true">
+      <div class="landing-copy">
+        <div class="rail-label">Level 0 briefing</div>
+        <h2>Velvet Rope</h2>
+        <p><strong>Velvet Rope</strong> is a retro persuasion game about talking past AI gatekeepers by reading the room.</p>
+        <ol>
+          <li><strong>Read the mood.</strong> The portrait, badge, and status bar tell you how the gatekeeper feels.</li>
+          <li><strong>Make a specific read.</strong> Charm works when you spot what they care about.</li>
+          <li><strong>Stay in character.</strong> A prompt trick, bribe, or demand usually makes the rope heavier.</li>
+        </ol>
+      </div>
+      <img class="landing-rope" src="{rope_url}" alt="the velvet rope waits">
+    </section>
+    """
+
+
+def _landing_read_room_html() -> str:
+    return """
+    <section class="read-room-panel">
+      <div>
+        <div class="rail-label">How to play</div>
+        <h3><span class="mood-dot"></span>Choose Level 1 to begin</h3>
+        <p>Each level is a conversation. Watch the mood shift, notice the soft spot, and answer like a person who gets the job.</p>
+      </div>
+    </section>
+    """
+
+
+def _landing_status_bar_html() -> str:
+    return """
+    <section class="velvet-status-bar character-landing mood-unimpressed is-active" aria-label="Gate status">
+      <div class="status-bar-frame">
+        <div class="rail-label">Level 0</div>
+        <p>The briefing light is on. Pick a gatekeeper from the level selector when you are ready.</p>
+      </div>
+    </section>
+    """
+
+
+def _landing_progress_rope_html() -> str:
+    return """
+    <section class="rope-progress character-landing" style="--rope-progress: 0%;" aria-label="Briefing progress">
+      <div class="rope-progress-track" aria-hidden="true">
+        <span class="rope-progress-fill"></span>
+        <span class="rope-progress-softspot" style="--pole-position: 0%;" aria-hidden="true"></span>
+        <span class="rope-progress-softspot" style="--pole-position: 100%;" aria-hidden="true"></span>
+      </div>
+    </section>
+    """
+
+
+def _landing_chat_messages() -> list[dict[str, str]]:
+    return [
+        {
+            "role": "assistant",
+            "content": "Welcome to the rope: choose Level 1 when you're ready for your first gatekeeper.",
+        },
+        {
+            "role": "assistant",
+            "content": "How to play: watch the mood, read what the gatekeeper values, and respond with specific empathy.",
+        },
+        {
+            "role": "assistant",
+            "content": "Bad shortcuts make things worse. This is persuasion, not password extraction.",
+        },
+    ]
+
+
+def _landing_input_update() -> dict:
+    return gr.update(
+        label=INTRO_INPUT_LABEL,
+        placeholder=INTRO_INPUT_PLACEHOLDER,
+        value="",
+        interactive=False,
+    )
 
 
 def _scene_html(state: GameState) -> str:

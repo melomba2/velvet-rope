@@ -15,9 +15,14 @@ from velvet_rope.characters import CRISPIN, LENORE, MARLOWE, PLAYABLE_CHARACTERS
 from velvet_rope.state import GameStatus, Mood, ScoreState, new_game_state
 from velvet_rope.ui import (
     CSS,
+    INTRO_LEVEL_LABEL,
     build_app,
     _chat_messages,
     _header_html,
+    _landing_chat_messages,
+    _landing_read_room_html,
+    _landing_scene_html,
+    _landing_status_bar_html,
     _progress_rope_html,
     _read_room_html,
     _scene_html,
@@ -411,6 +416,43 @@ def test_header_uses_general_game_pitch_without_presenter_or_level_stamp():
     assert "Read the room" in header
     assert "talk your way past." in header
     assert "talk your way past the rope" not in header
+
+
+def test_level_zero_landing_scene_explains_game_with_existing_retro_assets():
+    scene = _landing_scene_html()
+
+    assert "landing-scene" in scene
+    assert "Level 0" in scene
+    assert "Velvet Rope" in scene
+    assert "Read the mood" in scene
+    assert "spot what they care about" in scene
+    assert "prompt trick" in scene
+    assert "door_bg.png" in scene
+    assert "rope_closed.png" in scene
+
+
+def test_level_zero_landing_panels_give_brief_play_instructions():
+    messages = _landing_chat_messages()
+    read_room = _landing_read_room_html()
+    status_bar = _landing_status_bar_html()
+
+    assert messages[0]["role"] == "assistant"
+    assert "choose Level 1" in messages[0]["content"]
+    assert "watch the mood" in messages[1]["content"]
+    assert "How to play" in read_room
+    assert "Choose Level 1" in read_room
+    assert "Level 0" in status_bar
+    assert "briefing" in status_bar
+
+
+def test_app_opens_on_level_zero_landing_before_first_gatekeeper():
+    source = inspect.getsource(build_app)
+
+    assert "intro_mode = gr.State(True)" in source
+    assert "choices=[INTRO_LEVEL_LABEL, *[character.level_label for character in PLAYABLE_CHARACTERS]]" in source
+    assert "value=INTRO_LEVEL_LABEL" in source
+    assert "def render(" in source
+    assert "intro_visible: bool" in source
 
 
 def test_compact_play_layout_removes_side_rail_and_decorative_hint_assets():
