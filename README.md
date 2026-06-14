@@ -12,6 +12,14 @@ license: mit
 short_description: Read AI gatekeepers' moods and talk your way past.
 tags:
   - build-small-hackathon
+  - track:wood
+  - sponsor:openai
+  - sponsor:modal
+  - achievement:welltuned
+  - achievement:offbrand
+  - achievement:llama
+  - achievement:sharing
+  - achievement:fieldnotes
   - thousand-token-wood
   - well-tuned
   - sharing-is-caring
@@ -20,6 +28,7 @@ tags:
   - custom-ui
   - gradio
   - modal
+  - codex
   - lora
   - gemma
   - game
@@ -32,12 +41,18 @@ models:
   - build-small-hackathon/velvet-rope-lenore-lora
   - build-small-hackathon/velvet-rope-aurelia-lora
   - google/gemma-4-26B-A4B-it
+datasets:
+  - build-small-hackathon/velvet-rope-playtest-transcripts
 ---
 
 ## 🏆 Build Small Hackathon Submission
 - **Track:** Thousand Token Wood
+- **Source repo:** https://github.com/melomba2/velvet-rope
 - **Demo video:** https://youtu.be/ilyFFChfPFE
 - **Social post:** https://x.com/lombard258/status/2065953865581596846
+- **Official judging tags:** `track:wood`, `sponsor:openai`, `sponsor:modal`,
+  `achievement:welltuned`, `achievement:offbrand`, `achievement:llama`,
+  `achievement:sharing`, `achievement:fieldnotes`
 - **Models (all ≤32B):** Gemma 4 12B (`unsloth/gemma-4-12b-it-qat-GGUF`, served via
   llama.cpp on Modal with one small LoRA adapter per character) + Gemma 4 26B-A4B
   (`google/gemma-4-26B-A4B-it`, 25.2B total / 3.8B active, Router fallback).
@@ -50,6 +65,28 @@ models:
 - **Why it fits:** A delightful, AI-load-bearing game — each gatekeeper's voice, mood
   shifts, and persuasion scoring come from the small model; you win by reading their
   soft spot, not by prompt injection.
+- **Codex eligibility:** OpenAI Codex was used throughout development for implementation,
+  review, documentation, local checks, and Hugging Face/GitHub submission work. The linked
+  repository includes Codex-attributed documentation commits.
+- **Submission evidence:** See [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) and
+  [FIELD_NOTES.md](FIELD_NOTES.md).
+
+## Prize & Badge Targets
+
+| Official tag | Why Velvet Rope earns it |
+| --- | --- |
+| `track:wood` | A whimsical, AI-native interactive game about reading strange gatekeepers instead of extracting a password. |
+| `sponsor:openai` | Codex was used holistically across coding, debugging, documentation, repository hygiene, and release preparation. |
+| `sponsor:modal` | The contest runtime uses a Modal-hosted OpenAI-compatible llama.cpp service for the 12B LoRA-backed model turns. |
+| `achievement:welltuned` | Five public character LoRA adapters specialize the shared Gemma 4 12B base model. |
+| `achievement:offbrand` | The app uses a custom pixel-art Gradio interface with bespoke sprites, panels, stamps, and mood feedback rather than stock Gradio styling. |
+| `achievement:llama` | The primary contest path serves the 12B model through llama.cpp on Modal. |
+| `achievement:sharing` | Cleaned playtest transcripts are published as a public Hugging Face dataset. |
+| `achievement:fieldnotes` | The project includes a concise field-notes report in [FIELD_NOTES.md](FIELD_NOTES.md). |
+
+Not claimed: `track:backyard`, `sponsor:openbmb`, `sponsor:nvidia`, `achievement:offgrid`,
+or Tiny Titan. Velvet Rope is whimsical rather than practical, does not use MiniCPM or
+Nemotron, uses cloud runtime paths, and its core models are larger than 4B.
 
 ## Idea & Tech
 
