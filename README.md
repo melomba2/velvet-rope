@@ -9,7 +9,7 @@ python_version: "3.11"
 app_file: app.py
 pinned: false
 license: mit
-short_description: Talk your way past whimsical AI gatekeepers by reading their moods.
+short_description: Read AI gatekeepers' moods and talk your way past.
 tags:
   - build-small-hackathon
   - thousand-token-wood
