@@ -5,10 +5,52 @@ colorFrom: red
 colorTo: yellow
 sdk: gradio
 sdk_version: 5.49.1
-python_version: 3.11
+python_version: "3.11"
 app_file: app.py
 pinned: false
+license: mit
+short_description: Talk your way past whimsical AI gatekeepers by reading their moods.
+tags:
+  - build-small-hackathon
+  - thousand-token-wood
+  - well-tuned
+  - sharing-is-caring
+  - llama-champion
+  - off-brand
+  - custom-ui
+  - best-demo
+  - gradio
+  - modal
+  - lora
+  - gemma
+  - game
+  - conversational
+models:
+  - unsloth/gemma-4-12b-it-qat-GGUF
+  - build-small-hackathon/velvet-rope-marlowe-lora
+  - build-small-hackathon/velvet-rope-vivienne-lora
+  - build-small-hackathon/velvet-rope-crispin-lora
+  - build-small-hackathon/velvet-rope-lenore-lora
+  - build-small-hackathon/velvet-rope-aurelia-lora
+  - google/gemma-4-26B-A4B-it
 ---
+
+## 🏆 Build Small Hackathon Submission
+- **Track:** Thousand Token Wood
+- **Demo video:** <<DEMO_VIDEO_URL>>
+- **Social post:** <<SOCIAL_POST_URL>>
+- **Models (all ≤32B):** Gemma 4 12B (`unsloth/gemma-4-12b-it-qat-GGUF`, served via
+  llama.cpp on Modal with one small LoRA adapter per character) + Gemma 4 26B-A4B
+  (`google/gemma-4-26B-A4B-it`, 25.2B total / 3.8B active, Router fallback).
+- **Public artifacts:** LoRA adapters for [Marlowe](https://huggingface.co/build-small-hackathon/velvet-rope-marlowe-lora),
+  [Vivienne](https://huggingface.co/build-small-hackathon/velvet-rope-vivienne-lora),
+  [Crispin](https://huggingface.co/build-small-hackathon/velvet-rope-crispin-lora),
+  [Lenore](https://huggingface.co/build-small-hackathon/velvet-rope-lenore-lora), and
+  [Aurelia](https://huggingface.co/build-small-hackathon/velvet-rope-aurelia-lora), plus
+  [cleaned playtest transcripts](https://huggingface.co/datasets/build-small-hackathon/velvet-rope-playtest-transcripts).
+- **Why it fits:** A delightful, AI-load-bearing game — each gatekeeper's voice, mood
+  shifts, and persuasion scoring come from the small model; you win by reading their
+  soft spot, not by prompt injection.
 
 # Velvet Rope
 
